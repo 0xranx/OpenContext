@@ -12,14 +12,13 @@ env:
   APP_NAME: opencontext-node
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
-defaults:
-  run:
-    working-directory: crates/opencontext-node
-
 jobs:
   build:
     name: Build - ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: crates/opencontext-node
     strategy:
       fail-fast: false
       matrix:
@@ -107,10 +106,10 @@ jobs:
       
       - name: Update version from tag
         if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: crates/opencontext-node
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "Updating version to $VERSION"
-          cd crates/opencontext-node
           npm version $VERSION --no-git-tag-version --allow-same-version
         shell: bash
       
@@ -120,31 +119,28 @@ jobs:
           path: crates/opencontext-node/artifacts
       
       - name: Move artifacts
-        run: |
-          cd crates/opencontext-node
-          npm run artifacts
-        shell: bash
+        working-directory: crates/opencontext-node
+        run: npm run artifacts
       
       - name: List packages
         run: ls -la npm
         working-directory: crates/opencontext-node
       
       - name: Publish native packages
+        working-directory: crates/opencontext-node
         run: |
-          cd crates/opencontext-node
           npm run prepublishOnly
           for dir in npm/*/; do
             cd "$dir"
             npm publish --access public || true
-            cd ../..
+            cd ..
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
       - name: Publish main package
-        run: |
-          cd crates/opencontext-node
-          npm publish --access public
+        working-directory: crates/opencontext-node
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
