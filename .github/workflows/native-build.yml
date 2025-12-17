@@ -31,13 +31,10 @@ jobs:
             target: aarch64-apple-darwin
             build: npm run build -- --target aarch64-apple-darwin
           
-          # Windows
+          # Windows (only x64, ARM64 requires special cross-compilation setup)
           - host: windows-latest
             target: x86_64-pc-windows-msvc
             build: npm run build -- --target x86_64-pc-windows-msvc
-          - host: windows-latest
-            target: aarch64-pc-windows-msvc
-            build: npm run build -- --target aarch64-pc-windows-msvc
 
     steps:
       - uses: actions/checkout@v4

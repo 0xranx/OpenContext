@@ -11,8 +11,7 @@
       "additional": [
         "x86_64-apple-darwin",
         "aarch64-apple-darwin",
-        "x86_64-pc-windows-msvc",
-        "aarch64-pc-windows-msvc"
+        "x86_64-pc-windows-msvc"
       ]
     }
   },
@@ -35,8 +34,7 @@
   "optionalDependencies": {
     "@opencontext/core-native-darwin-x64": "0.1.0",
     "@opencontext/core-native-darwin-arm64": "0.1.0",
-    "@opencontext/core-native-win32-x64-msvc": "0.1.0",
-    "@opencontext/core-native-win32-arm64-msvc": "0.1.0"
+    "@opencontext/core-native-win32-x64-msvc": "0.1.0"
   },
   "engines": {
     "node": ">= 18"
