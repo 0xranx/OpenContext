@@ -83,8 +83,7 @@ impl EmbeddingConfig {
 }
 
 fn default_api_base() -> String {
-    std::env::var("OPENAI_API_BASE")
-        .unwrap_or_else(|_| "https://api.openai.com/v1".to_string())
+    std::env::var("OPENAI_API_BASE").unwrap_or_else(|_| "https://api.openai.com/v1".to_string())
 }
 
 fn default_model() -> String {
@@ -101,7 +100,7 @@ fn default_dimensions() -> usize {
 }
 
 fn default_batch_size() -> usize {
-    10  // DashScope and some other APIs limit batch size to 10
+    10 // DashScope and some other APIs limit batch size to 10
 }
 
 /// Search behavior configuration
@@ -206,7 +205,7 @@ struct NodeJsConfig {
     embedding_api_base: Option<String>,
     #[serde(rename = "EMBEDDING_MODEL")]
     embedding_model: Option<String>,
-    
+
     // Legacy naming (backward compatibility)
     #[serde(rename = "OPENAI_API_KEY")]
     openai_api_key: Option<String>,
@@ -243,7 +242,9 @@ impl SearchConfig {
                             config.embedding.api_key = Some(key);
                         }
                     }
-                    let api_base = node_config.embedding_api_base.or(node_config.openai_base_url);
+                    let api_base = node_config
+                        .embedding_api_base
+                        .or(node_config.openai_base_url);
                     if let Some(base_url) = api_base {
                         if !base_url.is_empty() {
                             config.embedding.api_base = base_url;
@@ -260,10 +261,14 @@ impl SearchConfig {
 
         // 3. Override with environment variables (highest priority)
         // New naming takes precedence over legacy naming
-        if let Ok(api_base) = std::env::var("EMBEDDING_API_BASE").or_else(|_| std::env::var("OPENAI_API_BASE")) {
+        if let Ok(api_base) =
+            std::env::var("EMBEDDING_API_BASE").or_else(|_| std::env::var("OPENAI_API_BASE"))
+        {
             config.embedding.api_base = api_base;
         }
-        if let Ok(api_key) = std::env::var("EMBEDDING_API_KEY").or_else(|_| std::env::var("OPENAI_API_KEY")) {
+        if let Ok(api_key) =
+            std::env::var("EMBEDDING_API_KEY").or_else(|_| std::env::var("OPENAI_API_KEY"))
+        {
             config.embedding.api_key = Some(api_key);
         }
         if let Ok(model) = std::env::var("EMBEDDING_MODEL") {
@@ -299,5 +304,3 @@ impl SearchConfig {
         Self::json_config_path()
     }
 }
-
-

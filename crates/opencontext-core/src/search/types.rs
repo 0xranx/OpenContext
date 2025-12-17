@@ -198,5 +198,3 @@ impl SearchResults {
         }
     }
 }
-
-

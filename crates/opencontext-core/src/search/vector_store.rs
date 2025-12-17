@@ -52,9 +52,17 @@ impl VectorStore {
 
         // Try to open existing table
         if let Some(ref db) = self.db {
-            let table_names = db.table_names().execute().await.map_err(SearchError::Lance)?;
+            let table_names = db
+                .table_names()
+                .execute()
+                .await
+                .map_err(SearchError::Lance)?;
             if table_names.contains(&TABLE_NAME.to_string()) {
-                let table = db.open_table(TABLE_NAME).execute().await.map_err(SearchError::Lance)?;
+                let table = db
+                    .open_table(TABLE_NAME)
+                    .execute()
+                    .await
+                    .map_err(SearchError::Lance)?;
                 self.table = Some(table);
             }
         }
@@ -134,9 +142,9 @@ impl VectorStore {
         let chunk_indices: Vec<u32> = chunks.iter().map(|c| c.chunk_index as u32).collect();
 
         let vectors_array = FixedSizeListArray::from_iter_primitive::<Float32Type, _, _>(
-            chunks.iter().map(|c| {
-                Some(c.vector.iter().copied().map(Some).collect::<Vec<_>>())
-            }),
+            chunks
+                .iter()
+                .map(|c| Some(c.vector.iter().copied().map(Some).collect::<Vec<_>>())),
             self.dimensions as i32,
         );
 
@@ -158,10 +166,7 @@ impl VectorStore {
 
     /// Search for similar vectors
     pub async fn search(&self, query_vector: &[f32], limit: usize) -> SearchResult<Vec<SearchHit>> {
-        let table = self
-            .table
-            .as_ref()
-            .ok_or(SearchError::IndexNotBuilt)?;
+        let table = self.table.as_ref().ok_or(SearchError::IndexNotBuilt)?;
 
         let results = table
             .vector_search(query_vector.to_vec())
@@ -231,7 +236,11 @@ impl VectorStore {
                 // Get optional fields from Node.js-built index
                 let section_title = section_titles.and_then(|arr| {
                     let val = arr.value(i);
-                    if val.is_empty() { None } else { Some(val.to_string()) }
+                    if val.is_empty() {
+                        None
+                    } else {
+                        Some(val.to_string())
+                    }
                 });
 
                 let line_start = line_starts.map(|arr| arr.value(i) as usize);
@@ -291,7 +300,9 @@ impl VectorStore {
 
         // Drop and recreate table
         if self.table.is_some() {
-            db.drop_table(TABLE_NAME).await.map_err(SearchError::Lance)?;
+            db.drop_table(TABLE_NAME)
+                .await
+                .map_err(SearchError::Lance)?;
             self.table = None;
         }
 
@@ -371,12 +382,20 @@ impl VectorStore {
 
                 let heading_path = heading_paths.and_then(|arr| {
                     let val = arr.value(i);
-                    if val.is_empty() { None } else { Some(val.to_string()) }
+                    if val.is_empty() {
+                        None
+                    } else {
+                        Some(val.to_string())
+                    }
                 });
 
                 let section_title = section_titles.and_then(|arr| {
                     let val = arr.value(i);
-                    if val.is_empty() { None } else { Some(val.to_string()) }
+                    if val.is_empty() {
+                        None
+                    } else {
+                        Some(val.to_string())
+                    }
                 });
 
                 let line_start = line_starts.map(|arr| arr.value(i) as usize);
@@ -403,4 +422,3 @@ impl VectorStore {
         Ok(hits)
     }
 }
-

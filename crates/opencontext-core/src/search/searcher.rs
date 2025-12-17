@@ -53,7 +53,7 @@ impl Searcher {
     /// Execute a search
     pub async fn search(&self, options: SearchOptions) -> SearchResult<SearchResults> {
         let query = options.query.trim();
-        
+
         if query.is_empty() {
             return Ok(SearchResults::empty(query.to_string()));
         }
@@ -76,22 +76,14 @@ impl Searcher {
 
         // Execute search based on mode
         let hits = match mode {
-            SearchMode::Vector => {
-                self.vector_search(query, search_limit).await?
-            }
-            SearchMode::Keyword => {
-                self.keyword_search(query, search_limit)
-            }
-            SearchMode::Hybrid => {
-                self.hybrid_search(query, search_limit).await?
-            }
+            SearchMode::Vector => self.vector_search(query, search_limit).await?,
+            SearchMode::Keyword => self.keyword_search(query, search_limit),
+            SearchMode::Hybrid => self.hybrid_search(query, search_limit).await?,
         };
 
         // Aggregate results
         let results = match aggregate_by {
-            AggregateBy::Content => {
-                hits.into_iter().take(limit).collect()
-            }
+            AggregateBy::Content => hits.into_iter().take(limit).collect(),
             AggregateBy::Doc => self.aggregate_by_doc(hits, limit),
             AggregateBy::Folder => self.aggregate_by_folder(hits, limit),
         };
@@ -126,12 +118,12 @@ impl Searcher {
 
         // Search vector store
         let mut results = self.vector_store.search(&query_vector, limit).await?;
-        
+
         // Mark as vector match
         for hit in &mut results {
             hit.matched_by = MatchType::Vector;
         }
-        
+
         Ok(results)
     }
 
@@ -139,20 +131,21 @@ impl Searcher {
     /// Matches Node.js KeywordSearcher implementation
     fn keyword_search(&self, query: &str, limit: usize) -> Vec<SearchHit> {
         // BM25 parameters (same as Node.js)
-        const K1: f32 = 1.2;  // Term frequency saturation parameter
-        const B: f32 = 0.75;  // Document length normalization parameter
-        
+        const K1: f32 = 1.2; // Term frequency saturation parameter
+        const B: f32 = 0.75; // Document length normalization parameter
+
         let query_tokens = Self::tokenize(query);
-        
+
         if query_tokens.is_empty() || self.all_chunks.is_empty() {
             return vec![];
         }
-        
+
         // Pre-compute document statistics
         let total_docs = self.all_chunks.len();
-        
+
         // Tokenize all documents and compute stats
-        let doc_data: Vec<(Vec<String>, HashMap<String, usize>, usize)> = self.all_chunks
+        let doc_data: Vec<(Vec<String>, HashMap<String, usize>, usize)> = self
+            .all_chunks
             .iter()
             .map(|chunk| {
                 let combined = format!(
@@ -166,7 +159,7 @@ impl Searcher {
                 (tokens, token_freq, length)
             })
             .collect();
-        
+
         // Calculate average document length
         let total_length: usize = doc_data.iter().map(|(_, _, len)| len).sum();
         let avg_doc_length = if total_docs > 0 {
@@ -174,44 +167,46 @@ impl Searcher {
         } else {
             1.0
         };
-        
+
         // Calculate document frequency for query terms
         let mut doc_frequency: HashMap<String, usize> = HashMap::new();
         for token in &query_tokens {
-            let df = doc_data.iter()
+            let df = doc_data
+                .iter()
                 .filter(|(_, freq, _)| freq.contains_key(token))
                 .count();
             doc_frequency.insert(token.clone(), df);
         }
-        
+
         // Score each document using BM25
-        let mut scored_hits: Vec<(f32, SearchHit)> = self.all_chunks
+        let mut scored_hits: Vec<(f32, SearchHit)> = self
+            .all_chunks
             .iter()
             .zip(doc_data.iter())
             .filter_map(|(chunk, (_, token_freq, doc_length))| {
                 let mut score = 0.0f32;
-                
+
                 for term in &query_tokens {
                     let tf = *token_freq.get(term).unwrap_or(&0) as f32;
                     if tf == 0.0 {
                         continue;
                     }
-                    
+
                     let df = *doc_frequency.get(term).unwrap_or(&0) as f32;
                     if df == 0.0 {
                         continue;
                     }
-                    
+
                     // IDF calculation: log((N - df + 0.5) / (df + 0.5) + 1)
                     let idf = ((total_docs as f32 - df + 0.5) / (df + 0.5) + 1.0).ln();
-                    
+
                     // TF normalization with document length
-                    let tf_norm = (tf * (K1 + 1.0)) / 
-                        (tf + K1 * (1.0 - B + B * (*doc_length as f32 / avg_doc_length)));
-                    
+                    let tf_norm = (tf * (K1 + 1.0))
+                        / (tf + K1 * (1.0 - B + B * (*doc_length as f32 / avg_doc_length)));
+
                     score += idf * tf_norm;
                 }
-                
+
                 if score > 0.0 {
                     let mut hit = chunk.clone();
                     hit.score = score;
@@ -225,34 +220,38 @@ impl Searcher {
 
         // Sort by score descending
         scored_hits.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-        
+
         // Normalize scores to 0-1 range (same as Node.js)
         let max_score = scored_hits.first().map(|(s, _)| *s).unwrap_or(1.0);
-        
+
         scored_hits
             .into_iter()
             .take(limit)
             .map(|(score, mut hit)| {
-                hit.score = if max_score > 0.0 { score / max_score } else { 0.0 };
+                hit.score = if max_score > 0.0 {
+                    score / max_score
+                } else {
+                    0.0
+                };
                 hit
             })
             .collect()
     }
-    
+
     /// Tokenize text (matches Node.js implementation)
     /// Supports Chinese (character-level + 2-gram) and English
     fn tokenize(text: &str) -> Vec<String> {
         if text.is_empty() {
             return vec![];
         }
-        
+
         let normalized = text.to_lowercase();
         let mut tokens = Vec::new();
-        
+
         // Regex-like matching for Chinese, English words, and numbers
         let mut current_english = String::new();
         let mut current_chinese = String::new();
-        
+
         for c in normalized.chars() {
             if c.is_ascii_alphanumeric() {
                 // Flush Chinese if any
@@ -284,7 +283,7 @@ impl Searcher {
                 }
             }
         }
-        
+
         // Flush remaining
         if !current_english.is_empty() && current_english.len() >= 2 {
             tokens.push(current_english);
@@ -292,16 +291,16 @@ impl Searcher {
         if !current_chinese.is_empty() {
             Self::add_chinese_tokens(&current_chinese, &mut tokens);
         }
-        
+
         tokens
     }
-    
+
     /// Check if character is Chinese
     fn is_chinese_char(c: char) -> bool {
         // Common Chinese Unicode range
         ('\u{4e00}'..='\u{9fff}').contains(&c)
     }
-    
+
     /// Add Chinese tokens (character-level + 2-gram)
     fn add_chinese_tokens(text: &str, tokens: &mut Vec<String>) {
         let chars: Vec<char> = text.chars().collect();
@@ -314,7 +313,7 @@ impl Searcher {
             }
         }
     }
-    
+
     /// Count token frequency
     fn count_tokens(tokens: &[String]) -> HashMap<String, usize> {
         let mut freq = HashMap::new();
@@ -327,14 +326,14 @@ impl Searcher {
     /// Perform hybrid search using RRF (Reciprocal Rank Fusion)
     async fn hybrid_search(&self, query: &str, limit: usize) -> SearchResult<Vec<SearchHit>> {
         let candidate_limit = limit * 3;
-        
+
         // Execute both searches
         let vector_results = self.vector_search(query, candidate_limit).await?;
         let keyword_results = self.keyword_search(query, candidate_limit);
-        
+
         // Use RRF to fuse results
         let fused = self.rrf_fusion(vector_results, keyword_results, limit);
-        
+
         Ok(fused)
     }
 
@@ -352,54 +351,52 @@ impl Searcher {
             hit: SearchHit,
             sources: Vec<&'static str>,
         }
-        
+
         let mut scores: HashMap<String, FusedEntry> = HashMap::new();
 
         // Process vector search results
         for (index, hit) in vector_results.into_iter().enumerate() {
-            let key = format!(
-                "{}:{}",
-                hit.file_path,
-                hit.line_start.unwrap_or(0)
-            );
+            let key = format!("{}:{}", hit.file_path, hit.line_start.unwrap_or(0));
             let rrf_score = VECTOR_WEIGHT / (RRF_K + index as f32 + 1.0);
-            
+
             if let Some(entry) = scores.get_mut(&key) {
                 entry.score += rrf_score;
                 entry.sources.push("vector");
             } else {
-                scores.insert(key, FusedEntry {
-                    score: rrf_score,
-                    hit: SearchHit {
-                        matched_by: MatchType::Hybrid,
-                        ..hit
+                scores.insert(
+                    key,
+                    FusedEntry {
+                        score: rrf_score,
+                        hit: SearchHit {
+                            matched_by: MatchType::Hybrid,
+                            ..hit
+                        },
+                        sources: vec!["vector"],
                     },
-                    sources: vec!["vector"],
-                });
+                );
             }
         }
 
         // Process keyword search results
         for (index, hit) in keyword_results.into_iter().enumerate() {
-            let key = format!(
-                "{}:{}",
-                hit.file_path,
-                hit.line_start.unwrap_or(0)
-            );
+            let key = format!("{}:{}", hit.file_path, hit.line_start.unwrap_or(0));
             let rrf_score = KEYWORD_WEIGHT / (RRF_K + index as f32 + 1.0);
-            
+
             if let Some(entry) = scores.get_mut(&key) {
                 entry.score += rrf_score;
                 entry.sources.push("keyword");
             } else {
-                scores.insert(key, FusedEntry {
-                    score: rrf_score,
-                    hit: SearchHit {
-                        matched_by: MatchType::Hybrid,
-                        ..hit
+                scores.insert(
+                    key,
+                    FusedEntry {
+                        score: rrf_score,
+                        hit: SearchHit {
+                            matched_by: MatchType::Hybrid,
+                            ..hit
+                        },
+                        sources: vec!["keyword"],
                     },
-                    sources: vec!["keyword"],
-                });
+                );
             }
         }
 
@@ -422,7 +419,11 @@ impl Searcher {
             })
             .collect();
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
         results
     }
@@ -442,22 +443,23 @@ impl Searcher {
         let mut doc_map: HashMap<String, DocAgg> = HashMap::new();
 
         for hit in hits {
-            let display_name = hit.file_path
+            let display_name = hit
+                .file_path
                 .split('/')
                 .last()
                 .unwrap_or(&hit.file_path)
                 .trim_end_matches(".md")
                 .to_string();
 
-            let entry = doc_map.entry(hit.file_path.clone()).or_insert_with(|| {
-                DocAgg {
+            let entry = doc_map
+                .entry(hit.file_path.clone())
+                .or_insert_with(|| DocAgg {
                     file_path: hit.file_path.clone(),
                     display_name: display_name.clone(),
                     top_score: 0.0,
                     hit_count: 0,
                     top_chunk: hit.clone(),
-                }
-            });
+                });
 
             entry.hit_count += 1;
 
@@ -495,7 +497,11 @@ impl Searcher {
             })
             .collect();
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
         results
     }
@@ -525,19 +531,23 @@ impl Searcher {
             let display_name = if folder_path == "." {
                 "(root)".to_string()
             } else {
-                folder_path.split('/').last().unwrap_or(&folder_path).to_string()
+                folder_path
+                    .split('/')
+                    .last()
+                    .unwrap_or(&folder_path)
+                    .to_string()
             };
 
-            let entry = folder_map.entry(folder_path.clone()).or_insert_with(|| {
-                FolderAgg {
+            let entry = folder_map
+                .entry(folder_path.clone())
+                .or_insert_with(|| FolderAgg {
                     folder_path: folder_path.clone(),
                     display_name,
                     top_score: 0.0,
                     hit_count: 0,
                     docs: HashSet::new(),
                     top_chunk: hit.clone(),
-                }
-            });
+                });
 
             entry.hit_count += 1;
             entry.docs.insert(hit.file_path.clone());
@@ -556,8 +566,8 @@ impl Searcher {
                 // score = topScore * 0.5 + min(hitCount/10, 1) * topScore * 0.3 + min(docCount/3, 1) * topScore * 0.2
                 let hit_bonus = (folder.hit_count as f32 / 10.0).min(1.0);
                 let doc_bonus = (folder.docs.len() as f32 / 3.0).min(1.0);
-                let aggregated_score = folder.top_score * 0.5 
-                    + hit_bonus * folder.top_score * 0.3 
+                let aggregated_score = folder.top_score * 0.5
+                    + hit_bonus * folder.top_score * 0.3
                     + doc_bonus * folder.top_score * 0.2;
 
                 SearchHit {
@@ -578,7 +588,11 @@ impl Searcher {
             })
             .collect();
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
         results
     }
@@ -588,4 +602,3 @@ impl Searcher {
         self.vector_store.exists().await
     }
 }
-

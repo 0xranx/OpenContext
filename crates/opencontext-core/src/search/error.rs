@@ -35,13 +35,11 @@ pub enum SearchError {
     #[error("Index not built. Run 'oc index build' first.")]
     IndexNotBuilt,
 
-    #[error("API key not configured. Set OPENAI_API_KEY or configure in ~/.opencontext/config.toml")]
+    #[error(
+        "API key not configured. Set OPENAI_API_KEY or configure in ~/.opencontext/config.toml"
+    )]
     ApiKeyMissing,
 }
 
 /// Result type alias for search operations
 pub type SearchResult<T> = std::result::Result<T, SearchError>;
-
-
-
-

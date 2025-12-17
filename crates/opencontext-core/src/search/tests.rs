@@ -12,7 +12,7 @@ mod tests {
             let chunker = Chunker::new(500, 50);
             let content = "# Title\n\nThis is a paragraph.\n\n## Section\n\nMore content here.";
             let chunks = chunker.chunk(content, "test.md");
-            
+
             assert!(!chunks.is_empty(), "Should produce at least one chunk");
             assert!(chunks[0].content.len() > 0, "Chunk should have content");
         }
@@ -22,7 +22,7 @@ mod tests {
             let chunker = Chunker::new(1000, 100);
             let content = "# Main Title\n\n## Sub Section\n\nContent under subsection.";
             let chunks = chunker.chunk(content, "test.md");
-            
+
             // Should have heading path
             let has_heading = chunks.iter().any(|c| !c.heading_path.is_empty());
             assert!(has_heading, "Should preserve heading path");
@@ -36,12 +36,16 @@ mod tests {
             let paragraph = "This is a test paragraph with some content. ";
             let content = paragraph.repeat(50);
             let chunks = chunker.chunk(&content, "test.md");
-            
+
             // Should produce multiple chunks
-            assert!(chunks.len() > 1, "Long content should be split into multiple chunks");
-            
+            assert!(
+                chunks.len() > 1,
+                "Long content should be split into multiple chunks"
+            );
+
             // Most chunks should be reasonably sized (allow some overflow for edge cases)
-            let reasonable_chunks = chunks.iter()
+            let reasonable_chunks = chunks
+                .iter()
                 .filter(|c| c.content.chars().count() <= max_size * 3)
                 .count();
             assert!(
@@ -54,7 +58,7 @@ mod tests {
         fn test_chunker_handles_empty_content() {
             let chunker = Chunker::new(500, 50);
             let chunks = chunker.chunk("", "empty.md");
-            
+
             // Empty content should produce zero or one empty chunk
             assert!(chunks.len() <= 1);
         }
@@ -62,12 +66,13 @@ mod tests {
         #[test]
         fn test_chunker_handles_chinese_text() {
             let chunker = Chunker::new(100, 10);
-            let content = "# 中文标题\n\n这是一段中文内容，用于测试分块功能。这段文字包含多个句子。";
-            
+            let content =
+                "# 中文标题\n\n这是一段中文内容，用于测试分块功能。这段文字包含多个句子。";
+
             // Should not panic on Chinese text
             let chunks = chunker.chunk(content, "chinese.md");
             assert!(!chunks.is_empty());
-            
+
             // Verify content is preserved
             let total_content: String = chunks.iter().map(|c| c.content.as_str()).collect();
             assert!(total_content.contains("中文"));
@@ -78,9 +83,12 @@ mod tests {
             let chunker = Chunker::new(1000, 100);
             let content = "Line 1\nLine 2\nLine 3\nLine 4\nLine 5";
             let chunks = chunker.chunk(content, "lines.md");
-            
+
             assert!(!chunks.is_empty());
-            assert!(chunks[0].start_line >= 1, "Line numbers should be 1-indexed");
+            assert!(
+                chunks[0].start_line >= 1,
+                "Line numbers should be 1-indexed"
+            );
         }
     }
 
@@ -117,7 +125,8 @@ mod tests {
 
         #[test]
         fn test_search_results_with_error() {
-            let results = SearchResults::with_error("query".to_string(), "Something went wrong".to_string());
+            let results =
+                SearchResults::with_error("query".to_string(), "Something went wrong".to_string());
             assert!(results.error.is_some());
             assert_eq!(results.error.unwrap(), "Something went wrong");
         }
@@ -168,4 +177,3 @@ mod tests {
         }
     }
 }
-

@@ -1,12 +1,16 @@
 name: Build Native Modules
 
 on:
-  push:
+  # Trigger after CI workflow completes successfully
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches: [main, master]
+  # Also trigger on version tags (for releases)
+  push:
     tags:
       - 'v*'
-  pull_request:
-    branches: [main, master]
 
 env:
   APP_NAME: opencontext-node
@@ -20,6 +24,8 @@ jobs:
   build:
     name: Build - ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.host }}
+    # Only run if CI succeeded (for workflow_run trigger) or if it's a tag push
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
     strategy:
       fail-fast: false
       matrix:
@@ -31,18 +37,6 @@ jobs:
           - host: macos-latest
             target: aarch64-apple-darwin
             build: npm run build -- --target aarch64-apple-darwin
-          
-          # Linux
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            build: npm run build -- --target x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            build: |
-              sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu
-              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
-              npm run build -- --target aarch64-unknown-linux-gnu
           
           # Windows
           - host: windows-latest
@@ -66,6 +60,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
+      
+      - name: Install Protobuf (macOS)
+        if: runner.os == 'macOS'
+        run: brew install protobuf
+        working-directory: .
+      
+      - name: Install Protobuf (Windows)
+        if: runner.os == 'Windows'
+        run: choco install protoc -y
+        working-directory: .
       
       - name: Install dependencies
         run: npm ci

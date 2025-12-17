@@ -1,8 +1,8 @@
 #![allow(clippy::needless_borrow)]
 
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use napi::bindgen_prelude::*;
 use napi::Result as NapiResult;
@@ -10,15 +10,12 @@ use napi::{Env, JsUnknown};
 use napi_derive::napi;
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
-use opencontext_core::{CoreError, EnvOverrides, OpenContext};
-use opencontext_core::events::{SharedEventBus, create_event_bus};
+use opencontext_core::events::{create_event_bus, SharedEventBus};
 use opencontext_core::search::{
-    Indexer as RustIndexer, 
-    Searcher as RustSearcher, 
-    SearchConfig, 
-    SearchOptions as RustSearchOptions,
-    IndexSyncService,
+    IndexSyncService, Indexer as RustIndexer, SearchConfig, SearchOptions as RustSearchOptions,
+    Searcher as RustSearcher,
 };
+use opencontext_core::{CoreError, EnvOverrides, OpenContext};
 use serde::Serialize;
 use tokio::sync::Mutex;
 
@@ -31,12 +28,11 @@ static INDEX_SYNC_RUNNING: AtomicBool = AtomicBool::new(false);
 static CONTEXT: OnceCell<OpenContext> = OnceCell::new();
 
 fn ctx() -> NapiResult<&'static OpenContext> {
-    CONTEXT
-        .get_or_try_init(|| {
-            OpenContext::initialize(EnvOverrides::default())
-                .map(|ctx| ctx.with_event_bus(EVENT_BUS.clone()))
-                .map_err(to_napi_error)
-        })
+    CONTEXT.get_or_try_init(|| {
+        OpenContext::initialize(EnvOverrides::default())
+            .map(|ctx| ctx.with_event_bus(EVENT_BUS.clone()))
+            .map_err(to_napi_error)
+    })
 }
 
 fn to_napi_error(err: CoreError) -> napi::Error {
@@ -273,20 +269,20 @@ pub struct SearchOptions {
 
 impl From<SearchOptions> for RustSearchOptions {
     fn from(opts: SearchOptions) -> Self {
-        use opencontext_core::search::{SearchMode, AggregateBy};
-        
+        use opencontext_core::search::{AggregateBy, SearchMode};
+
         let mode = opts.mode.as_deref().map(|s| match s {
             "vector" => SearchMode::Vector,
             "keyword" => SearchMode::Keyword,
             _ => SearchMode::Hybrid,
         });
-        
+
         let aggregate_by = opts.aggregate_by.as_deref().map(|s| match s {
             "content" => AggregateBy::Content,
             "folder" => AggregateBy::Folder,
             _ => AggregateBy::Doc,
         });
-        
+
         RustSearchOptions {
             query: opts.query,
             limit: opts.limit.map(|v| v as usize),
@@ -308,9 +304,9 @@ impl Searcher {
     /// contexts_root is optional - if not provided, uses default from environment
     #[napi(factory)]
     pub async fn create() -> Result<Searcher> {
-        let config = SearchConfig::load()
-            .map_err(search_error_to_napi)?;
-        let searcher = RustSearcher::new(config).await
+        let config = SearchConfig::load().map_err(search_error_to_napi)?;
+        let searcher = RustSearcher::new(config)
+            .await
             .map_err(search_error_to_napi)?;
         Ok(Searcher {
             inner: Arc::new(Mutex::new(searcher)),
@@ -322,11 +318,12 @@ impl Searcher {
     pub async fn search(&self, options: SearchOptions) -> Result<serde_json::Value> {
         let rust_options: RustSearchOptions = options.into();
         let searcher = self.inner.lock().await;
-        let results = searcher.search(rust_options).await
+        let results = searcher
+            .search(rust_options)
+            .await
             .map_err(search_error_to_napi)?;
-        
-        serde_json::to_value(&results)
-            .map_err(|e| napi::Error::from_reason(e.to_string()))
+
+        serde_json::to_value(&results).map_err(|e| napi::Error::from_reason(e.to_string()))
     }
 }
 
@@ -345,10 +342,10 @@ impl Indexer {
         // Get contexts_root from the initialized OpenContext
         let oc_ctx = ctx()?;
         let contexts_root = PathBuf::from(&oc_ctx.env_info().contexts_root);
-        
-        let config = SearchConfig::load()
-            .map_err(search_error_to_napi)?;
-        let indexer = RustIndexer::new(config, contexts_root).await
+
+        let config = SearchConfig::load().map_err(search_error_to_napi)?;
+        let indexer = RustIndexer::new(config, contexts_root)
+            .await
             .map_err(search_error_to_napi)?;
         Ok(Indexer {
             inner: Arc::new(Mutex::new(indexer)),
@@ -362,26 +359,31 @@ impl Indexer {
         // Get all documents from OpenContext
         let oc_ctx = ctx()?;
         let folders = oc_ctx.list_folders(true).map_err(to_napi_error)?;
-        
+
         let mut all_docs = Vec::new();
         for folder in folders {
-            let docs = oc_ctx.list_docs(&folder.rel_path, true).map_err(to_napi_error)?;
+            let docs = oc_ctx
+                .list_docs(&folder.rel_path, true)
+                .map_err(to_napi_error)?;
             all_docs.extend(docs);
         }
-        
+
         let mut indexer = self.inner.lock().await;
-        let stats = indexer.build_all(all_docs).await
+        let stats = indexer
+            .build_all(all_docs)
+            .await
             .map_err(search_error_to_napi)?;
-        
-        serde_json::to_value(&stats)
-            .map_err(|e| napi::Error::from_reason(e.to_string()))
+
+        serde_json::to_value(&stats).map_err(|e| napi::Error::from_reason(e.to_string()))
     }
 
     /// Index a single file
     #[napi]
     pub async fn index_file(&self, rel_path: String) -> Result<u32> {
         let mut indexer = self.inner.lock().await;
-        let count = indexer.index_file(&rel_path).await
+        let count = indexer
+            .index_file(&rel_path)
+            .await
             .map_err(search_error_to_napi)?;
         Ok(count as u32)
     }
@@ -390,7 +392,9 @@ impl Indexer {
     #[napi]
     pub async fn remove_file(&self, rel_path: String) -> Result<()> {
         let mut indexer = self.inner.lock().await;
-        indexer.remove_file(&rel_path).await
+        indexer
+            .remove_file(&rel_path)
+            .await
             .map_err(search_error_to_napi)?;
         Ok(())
     }
@@ -406,19 +410,16 @@ impl Indexer {
     #[napi]
     pub async fn get_stats(&self) -> Result<serde_json::Value> {
         let indexer = self.inner.lock().await;
-        let stats = indexer.get_stats().await
-            .map_err(search_error_to_napi)?;
-        
-        serde_json::to_value(&stats)
-            .map_err(|e| napi::Error::from_reason(e.to_string()))
+        let stats = indexer.get_stats().await.map_err(search_error_to_napi)?;
+
+        serde_json::to_value(&stats).map_err(|e| napi::Error::from_reason(e.to_string()))
     }
 
     /// Clean/reset the index
     #[napi]
     pub async fn clean(&self) -> Result<()> {
         let mut indexer = self.inner.lock().await;
-        indexer.clean().await
-            .map_err(search_error_to_napi)?;
+        indexer.clean().await.map_err(search_error_to_napi)?;
         Ok(())
     }
 }
@@ -426,20 +427,18 @@ impl Indexer {
 /// Load search config
 #[napi]
 pub fn load_search_config() -> Result<serde_json::Value> {
-    let config = SearchConfig::load()
-        .map_err(search_error_to_napi)?;
-    
-    serde_json::to_value(&config)
-        .map_err(|e| napi::Error::from_reason(e.to_string()))
+    let config = SearchConfig::load().map_err(search_error_to_napi)?;
+
+    serde_json::to_value(&config).map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
 // ==================== Index Sync Service ====================
 
 /// Start the index sync service
-/// 
+///
 /// This service listens to document/folder events and automatically
 /// updates the search index in batches at regular intervals.
-/// 
+///
 /// @param interval_secs - Interval in seconds between batch processing (default: 300 = 5 minutes)
 /// @returns true if started, false if already running
 #[napi]
@@ -448,19 +447,17 @@ pub async fn start_index_sync(interval_secs: Option<u32>) -> Result<bool> {
     if INDEX_SYNC_RUNNING.swap(true, Ordering::SeqCst) {
         return Ok(false); // Already running
     }
-    
+
     let oc_ctx = ctx()?;
     let contexts_root = PathBuf::from(&oc_ctx.env_info().contexts_root);
-    
-    let config = SearchConfig::load()
-        .map_err(search_error_to_napi)?;
-    
+
+    let config = SearchConfig::load().map_err(search_error_to_napi)?;
+
     let interval = interval_secs.unwrap_or(300) as u64;
-    let sync_service = IndexSyncService::new(config, contexts_root)
-        .with_interval(interval);
-    
+    let sync_service = IndexSyncService::new(config, contexts_root).with_interval(interval);
+
     let event_bus = EVENT_BUS.clone();
-    
+
     // Spawn the sync service in a background task
     tokio::spawn(async move {
         if let Err(e) = sync_service.start(event_bus).await {
@@ -468,7 +465,7 @@ pub async fn start_index_sync(interval_secs: Option<u32>) -> Result<bool> {
         }
         INDEX_SYNC_RUNNING.store(false, Ordering::SeqCst);
     });
-    
+
     Ok(true)
 }
 

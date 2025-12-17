@@ -207,7 +207,10 @@ impl OpenContext {
             if updated != doc.updated_at {
                 let ts = updated.clone();
                 self.with_conn(|conn| {
-                    conn.execute("UPDATE docs SET updated_at = ?1 WHERE id = ?2", params![ts, doc.id])?;
+                    conn.execute(
+                        "UPDATE docs SET updated_at = ?1 WHERE id = ?2",
+                        params![ts, doc.id],
+                    )?;
                     Ok(())
                 })?;
                 doc.updated_at = updated;
@@ -326,7 +329,7 @@ impl OpenContext {
         }
         fs::rename(&folder.abs_path, &new_abs_path)?;
         let ts = now_iso();
-        
+
         // Collect affected doc paths before the transaction (for event emission)
         #[cfg(feature = "search")]
         let affected_doc_paths: Vec<String> = self.with_conn(|conn| {
@@ -337,7 +340,7 @@ impl OpenContext {
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(paths)
         })?;
-        
+
         self.with_conn(|conn| {
             let tx = conn.unchecked_transaction()?;
             {
@@ -450,7 +453,7 @@ impl OpenContext {
         fs::rename(&folder.abs_path, &new_abs_path)?;
 
         let ts = now_iso();
-        
+
         // Collect affected doc paths before the transaction (for event emission)
         #[cfg(feature = "search")]
         let affected_doc_paths: Vec<String> = self.with_conn(|conn| {
@@ -461,7 +464,7 @@ impl OpenContext {
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(paths)
         })?;
-        
+
         self.with_conn(|conn| {
             let tx = conn.unchecked_transaction()?;
             {
@@ -548,20 +551,21 @@ impl OpenContext {
         let folder = self
             .find_folder(&rel_path)?
             .ok_or_else(|| folder_not_found(&rel_path))?;
-        
+
         // Collect documents to be removed (for event emission)
         #[cfg(feature = "search")]
         let removed_docs: Vec<String> = self.with_conn(|conn| {
             let like_pattern = format!("{}/%", rel_path);
-            let mut stmt = conn.prepare(
-                "SELECT rel_path FROM docs WHERE rel_path LIKE ?1 OR folder_id = ?2"
-            )?;
+            let mut stmt =
+                conn.prepare("SELECT rel_path FROM docs WHERE rel_path LIKE ?1 OR folder_id = ?2")?;
             let paths = stmt
-                .query_map(params![like_pattern, folder.id], |row| row.get::<_, String>(0))?
+                .query_map(params![like_pattern, folder.id], |row| {
+                    row.get::<_, String>(0)
+                })?
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(paths)
         })?;
-        
+
         self.with_conn(|conn| {
             let child_count: i64 = conn.query_row(
                 "SELECT COUNT(1) FROM folders WHERE parent_id = ?1",
@@ -600,14 +604,14 @@ impl OpenContext {
                 fs::remove_dir(&folder.abs_path)?;
             }
         }
-        
+
         // Emit folder deleted event
         #[cfg(feature = "search")]
         self.emit_folder_event(FolderEvent::Deleted {
             rel_path: rel_path.clone(),
             removed_docs,
         });
-        
+
         Ok(Removed { rel_path })
     }
 
@@ -872,7 +876,10 @@ impl OpenContext {
             if updated != doc.updated_at {
                 let ts = updated;
                 self.with_conn(|conn| {
-                    conn.execute("UPDATE docs SET updated_at = ?1 WHERE id = ?2", params![ts, doc.id])?;
+                    conn.execute(
+                        "UPDATE docs SET updated_at = ?1 WHERE id = ?2",
+                        params![ts, doc.id],
+                    )?;
                     Ok(())
                 })?;
             }
@@ -1196,7 +1203,10 @@ fn ensure_schema_migrations(conn: &Connection) -> CoreResult<()> {
         .collect::<Result<Vec<_>, _>>()?;
     for id in ids {
         let sid = generate_stable_id(conn)?;
-        conn.execute("UPDATE docs SET stable_id = ?1 WHERE id = ?2", params![sid, id])?;
+        conn.execute(
+            "UPDATE docs SET stable_id = ?1 WHERE id = ?2",
+            params![sid, id],
+        )?;
     }
     Ok(())
 }

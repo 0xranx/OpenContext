@@ -67,8 +67,8 @@ impl EmbeddingClient {
             .build()
             .map_err(SearchError::Http)?;
 
-        Ok(Self { 
-            config, 
+        Ok(Self {
+            config,
             client,
             actual_dimensions: AtomicUsize::new(0),
         })
@@ -80,10 +80,10 @@ impl EmbeddingClient {
         if actual > 0 {
             actual
         } else {
-        self.config.dimensions
+            self.config.dimensions
         }
     }
-    
+
     /// Get actual dimensions detected from API (0 if not yet detected)
     pub fn actual_dimensions(&self) -> usize {
         self.actual_dimensions.load(Ordering::Relaxed)
@@ -100,7 +100,7 @@ impl EmbeddingClient {
 
         // Process in batches
         let mut all_embeddings = Vec::with_capacity(texts.len());
-        
+
         for batch in texts.chunks(self.config.batch_size) {
             let batch_embeddings = self.embed_batch(batch.to_vec(), &api_key, &url).await?;
             all_embeddings.extend(batch_embeddings);
@@ -125,7 +125,7 @@ impl EmbeddingClient {
         url: &str,
     ) -> SearchResult<Vec<Vec<f32>>> {
         let input_count = texts.len();
-        
+
         // Truncate texts that are too long (most embedding APIs have ~8K token limit)
         // Using char count as approximation: ~4 chars per token for English, ~1-2 for Chinese
         // Set conservative limit to avoid API silently dropping texts
@@ -140,7 +140,7 @@ impl EmbeddingClient {
                 }
             })
             .collect();
-        
+
         // Only send dimensions for OpenAI text-embedding-3 models
         // Other APIs (like DashScope) may not support this parameter
         let dimensions = if self.config.model.starts_with("text-embedding-3") {
@@ -179,32 +179,34 @@ impl EmbeddingClient {
             )));
         }
 
-        let response: EmbeddingResponse =
-            serde_json::from_str(&body).map_err(SearchError::Json)?;
+        let response: EmbeddingResponse = serde_json::from_str(&body).map_err(SearchError::Json)?;
 
         // Verify we got embeddings for all inputs
         if response.data.len() != input_count {
             return Err(SearchError::Embedding(format!(
                 "Embedding count mismatch: sent {} texts, got {} embeddings",
-                input_count, response.data.len()
+                input_count,
+                response.data.len()
             )));
         }
 
         // Sort by index to ensure correct order
         let mut data = response.data;
         data.sort_by_key(|d| d.index);
-        
+
         // Auto-detect actual dimensions from first embedding
         if let Some(first) = data.first() {
             let detected_dim = first.embedding.len();
             let current = self.actual_dimensions.load(Ordering::Relaxed);
             if current == 0 {
-                self.actual_dimensions.store(detected_dim, Ordering::Relaxed);
+                self.actual_dimensions
+                    .store(detected_dim, Ordering::Relaxed);
                 log::info!("Auto-detected embedding dimensions: {}", detected_dim);
             } else if current != detected_dim {
                 log::warn!(
                     "Embedding dimension mismatch: expected {}, got {}",
-                    current, detected_dim
+                    current,
+                    detected_dim
                 );
             }
         }
@@ -224,5 +226,3 @@ mod tests {
         assert_eq!(config.dimensions, 1536);
     }
 }
-
-

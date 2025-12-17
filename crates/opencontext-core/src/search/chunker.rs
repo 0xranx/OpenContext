@@ -120,7 +120,7 @@ impl Chunker {
             if current_text.chars().count() > self.max_chunk_chars {
                 let heading_path = Self::build_heading_path(&current_heading_path);
                 let (chunk, remainder) = self.split_chunk(&current_text);
-                
+
                 chunks.push(TextChunk {
                     content: chunk,
                     heading_path: heading_path.clone(),
@@ -161,15 +161,14 @@ impl Chunker {
     fn split_chunk(&self, text: &str) -> (String, String) {
         let chars: Vec<char> = text.chars().collect();
         let char_count = chars.len();
-        
+
         if char_count <= self.max_chunk_chars {
             return (text.to_string(), String::new());
         }
 
         // Helper: convert char index to byte index
-        let char_to_byte = |char_idx: usize| -> usize {
-            chars.iter().take(char_idx).map(|c| c.len_utf8()).sum()
-        };
+        let char_to_byte =
+            |char_idx: usize| -> usize { chars.iter().take(char_idx).map(|c| c.len_utf8()).sum() };
 
         // Search window: look for split points within max_chunk_chars
         let search_text: String = chars[..self.max_chunk_chars].iter().collect();
@@ -179,7 +178,7 @@ impl Chunker {
             let char_pos = search_text[..pos].chars().count();
             let byte_pos = char_to_byte(char_pos);
             let chunk = text[..byte_pos].trim().to_string();
-            
+
             let remainder_char_start = char_pos.saturating_sub(self.overlap_chars);
             let remainder_byte_start = char_to_byte(remainder_char_start);
             let remainder = text[remainder_byte_start..].trim().to_string();
@@ -194,7 +193,7 @@ impl Chunker {
                 let char_pos = split_text.chars().count();
                 let byte_pos = char_to_byte(char_pos);
                 let chunk = text[..byte_pos].trim().to_string();
-                
+
                 let remainder_char_start = char_pos.saturating_sub(self.overlap_chars);
                 let remainder_byte_start = char_to_byte(remainder_char_start);
                 let remainder = text[remainder_byte_start..].trim().to_string();
@@ -209,12 +208,12 @@ impl Chunker {
                 let char_pos = search_text[..=pos].chars().count();
                 let byte_pos = char_to_byte(char_pos);
                 let chunk = text[..byte_pos].trim().to_string();
-                
+
                 let remainder_char_start = char_pos.saturating_sub(self.overlap_chars);
                 let remainder_byte_start = char_to_byte(remainder_char_start);
                 let remainder = text[remainder_byte_start..].trim().to_string();
-            return (chunk, remainder);
-        }
+                return (chunk, remainder);
+            }
         }
 
         // Fall back to whitespace boundary
@@ -222,7 +221,7 @@ impl Chunker {
             let char_pos = search_text[..pos].chars().count();
             let byte_pos = char_to_byte(char_pos);
             let chunk = text[..byte_pos].trim().to_string();
-            
+
             let remainder_char_start = char_pos.saturating_sub(self.overlap_chars);
             let remainder_byte_start = char_to_byte(remainder_char_start);
             let remainder = text[remainder_byte_start..].trim().to_string();
@@ -232,7 +231,7 @@ impl Chunker {
         // Last resort: hard split at max_chunk_chars (safe because we use char index)
         let byte_pos = char_to_byte(self.max_chunk_chars);
         let chunk = text[..byte_pos].to_string();
-        
+
         let remainder_char_start = self.max_chunk_chars.saturating_sub(self.overlap_chars);
         let remainder_byte_start = char_to_byte(remainder_char_start);
         let remainder = text[remainder_byte_start..].to_string();
@@ -269,7 +268,7 @@ mod tests {
         let chunker = Chunker::default();
         let content = "# Hello\n\nThis is a test.\n\n## Section\n\nMore content here.";
         let chunks = chunker.chunk(content, "test.md");
-        
+
         assert!(!chunks.is_empty());
     }
 
@@ -278,7 +277,7 @@ mod tests {
         let chunker = Chunker::new(100, 20);
         let content = "# 标题\n\n这是一段很长的中文内容。我们需要确保在切分时不会切到汉字中间。这对于处理多语言内容非常重要。";
         let chunks = chunker.chunk(content, "test.md");
-        
+
         // All chunks should be valid UTF-8 (this would panic if we split incorrectly)
         for chunk in &chunks {
             assert!(chunk.content.is_char_boundary(0));
@@ -291,10 +290,14 @@ mod tests {
         let chunker = Chunker::default();
         let content = "# Title\n\n## Section 1\n\nContent 1\n\n### Subsection\n\nContent 2";
         let chunks = chunker.chunk(content, "test.md");
-        
+
         // Check that heading paths are built correctly
         for chunk in &chunks {
-            println!("Chunk: {} | Path: {}", chunk.content.chars().take(30).collect::<String>(), chunk.heading_path);
+            println!(
+                "Chunk: {} | Path: {}",
+                chunk.content.chars().take(30).collect::<String>(),
+                chunk.heading_path
+            );
         }
     }
 
@@ -303,7 +306,7 @@ mod tests {
         let chunker = Chunker::new(50, 10);
         let content = "Hello 世界！This is a test. 这是测试。Mixed content here 混合内容。";
         let chunks = chunker.chunk(content, "test.md");
-        
+
         for chunk in &chunks {
             // Verify each chunk is valid UTF-8
             let _ = chunk.content.chars().count();

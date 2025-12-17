@@ -11,10 +11,10 @@ use std::time::Duration;
 use tokio::sync::{broadcast, Mutex};
 use tokio::time::{interval_at, Instant};
 
-use crate::events::{DocEvent, Event, FolderEvent, SharedEventBus};
 use super::config::SearchConfig;
 use super::error::SearchResult;
 use super::indexer::Indexer;
+use crate::events::{DocEvent, Event, FolderEvent, SharedEventBus};
 
 /// Update action for the index
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ enum IndexAction {
 }
 
 /// Index synchronization service
-/// 
+///
 /// Collects file change events and processes them in batches at regular intervals.
 pub struct IndexSyncService {
     config: SearchConfig,
@@ -63,25 +63,26 @@ impl IndexSyncService {
 
     /// Enable or disable the service
     pub fn set_enabled(&self, enabled: bool) {
-        self.enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
+        self.enabled
+            .store(enabled, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Check if the service is enabled
     pub fn is_enabled(&self) -> bool {
         self.enabled.load(std::sync::atomic::Ordering::SeqCst)
     }
-    
+
     /// Get count of pending updates
     pub async fn pending_count(&self) -> usize {
         self.pending_actions.lock().await.len()
     }
 
     /// Start the sync service, listening to events from the event bus
-    /// 
+    ///
     /// Events are collected and processed in batches at regular intervals (default: 5 minutes)
     pub async fn start(&self, event_bus: SharedEventBus) -> SearchResult<()> {
         let mut receiver = event_bus.subscribe();
-        
+
         // Initialize indexer
         {
             let mut indexer_guard = self.indexer.lock().await;
@@ -96,12 +97,15 @@ impl IndexSyncService {
         let enabled = self.enabled.clone();
         let pending = self.pending_actions.clone();
         let interval_secs = self.check_interval_secs;
-        
+
         tokio::spawn(async move {
             Self::process_pending_interval(pending, indexer, enabled, interval_secs).await;
         });
 
-        log::info!("[IndexSync] Started with {} second interval", self.check_interval_secs);
+        log::info!(
+            "[IndexSync] Started with {} second interval",
+            self.check_interval_secs
+        );
 
         // Event listener loop - just collect actions, don't process immediately
         loop {
@@ -129,7 +133,7 @@ impl IndexSyncService {
                             }
                         }
                     }
-                    
+
                     let count = pending_guard.len();
                     if count > 0 {
                         log::debug!("[IndexSync] {} pending updates", count);
@@ -158,24 +162,22 @@ impl IndexSyncService {
                 DocEvent::Deleted { rel_path } => {
                     vec![IndexAction::Remove { rel_path }]
                 }
-                DocEvent::Renamed { old_path, new_path } | DocEvent::Moved { old_path, new_path } => {
+                DocEvent::Renamed { old_path, new_path }
+                | DocEvent::Moved { old_path, new_path } => {
                     vec![IndexAction::Rename { old_path, new_path }]
                 }
             },
             Event::Folder(folder_event) => match folder_event {
                 FolderEvent::Created { .. } => vec![],
-                FolderEvent::Renamed { affected_docs, .. } | FolderEvent::Moved { affected_docs, .. } => {
-                    affected_docs
-                        .into_iter()
-                        .map(|(old_path, new_path)| IndexAction::Rename { old_path, new_path })
-                        .collect()
-                }
-                FolderEvent::Deleted { removed_docs, .. } => {
-                    removed_docs
-                        .into_iter()
-                        .map(|rel_path| IndexAction::Remove { rel_path })
-                        .collect()
-                }
+                FolderEvent::Renamed { affected_docs, .. }
+                | FolderEvent::Moved { affected_docs, .. } => affected_docs
+                    .into_iter()
+                    .map(|(old_path, new_path)| IndexAction::Rename { old_path, new_path })
+                    .collect(),
+                FolderEvent::Deleted { removed_docs, .. } => removed_docs
+                    .into_iter()
+                    .map(|rel_path| IndexAction::Remove { rel_path })
+                    .collect(),
             },
         }
     }
@@ -190,14 +192,14 @@ impl IndexSyncService {
         // Start first tick after interval_secs (not immediately)
         let start = Instant::now() + Duration::from_secs(interval_secs);
         let mut ticker = interval_at(start, Duration::from_secs(interval_secs));
-        
+
         loop {
             ticker.tick().await;
-            
+
             if !enabled.load(std::sync::atomic::Ordering::SeqCst) {
                 continue;
             }
-            
+
             // Take all pending actions
             let actions: Vec<IndexAction> = {
                 let mut pending_guard = pending.lock().await;
@@ -206,10 +208,10 @@ impl IndexSyncService {
                 }
                 pending_guard.drain().map(|(_, v)| v).collect()
             };
-            
+
             let action_count = actions.len();
             log::info!("[IndexSync] Processing {} pending updates", action_count);
-            
+
             let mut indexer_guard = indexer.lock().await;
             if let Some(ref mut indexer) = *indexer_guard {
                 // Check if index exists before processing
@@ -226,7 +228,11 @@ impl IndexSyncService {
                         IndexAction::Update { rel_path } => {
                             match indexer.index_file(&rel_path).await {
                                 Ok(count) => {
-                                    log::debug!("[IndexSync] Updated: {} ({} chunks)", rel_path, count);
+                                    log::debug!(
+                                        "[IndexSync] Updated: {} ({} chunks)",
+                                        rel_path,
+                                        count
+                                    );
                                     Ok(())
                                 }
                                 Err(e) => Err(e),
@@ -244,7 +250,11 @@ impl IndexSyncService {
                         IndexAction::Rename { old_path, new_path } => {
                             match indexer.update_file_path(&old_path, &new_path).await {
                                 Ok(()) => {
-                                    log::debug!("[IndexSync] Renamed: {} -> {}", old_path, new_path);
+                                    log::debug!(
+                                        "[IndexSync] Renamed: {} -> {}",
+                                        old_path,
+                                        new_path
+                                    );
                                     Ok(())
                                 }
                                 Err(e) => Err(e),
@@ -259,18 +269,20 @@ impl IndexSyncService {
                         success_count += 1;
                     }
                 }
-                
+
                 // Update metadata once after all actions
                 if success_count > 0 {
                     if let Err(e) = indexer.update_metadata() {
                         log::warn!("[IndexSync] Failed to update metadata: {}", e);
                     }
                 }
-                
-                log::info!("[IndexSync] Batch complete: {} success, {} errors", success_count, error_count);
+
+                log::info!(
+                    "[IndexSync] Batch complete: {} success, {} errors",
+                    success_count,
+                    error_count
+                );
             }
         }
     }
 }
-
-

@@ -23,8 +23,8 @@
 //! }).await?;
 //! ```
 
-mod config;
 mod chunker;
+mod config;
 mod embedding;
 mod error;
 mod index_sync;
@@ -36,13 +36,12 @@ mod vector_store;
 #[cfg(test)]
 mod tests;
 
-pub use config::{SearchConfig, EmbeddingConfig};
 pub use chunker::Chunker;
+pub use config::{EmbeddingConfig, SearchConfig};
 pub use embedding::EmbeddingClient;
 pub use error::{SearchError, SearchResult};
 pub use index_sync::IndexSyncService;
-pub use indexer::{Indexer, IndexStats, IndexProgress};
+pub use indexer::{IndexProgress, IndexStats, Indexer};
 pub use searcher::Searcher;
 pub use types::*;
 pub use vector_store::VectorStore;
-

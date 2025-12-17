@@ -10,36 +10,22 @@ use tokio::sync::broadcast;
 #[derive(Debug, Clone)]
 pub enum DocEvent {
     /// A new document was created
-    Created {
-        rel_path: String,
-    },
+    Created { rel_path: String },
     /// Document content was updated
-    Updated {
-        rel_path: String,
-    },
+    Updated { rel_path: String },
     /// A document was deleted
-    Deleted {
-        rel_path: String,
-    },
+    Deleted { rel_path: String },
     /// A document was renamed
-    Renamed {
-        old_path: String,
-        new_path: String,
-    },
+    Renamed { old_path: String, new_path: String },
     /// A document was moved to another folder
-    Moved {
-        old_path: String,
-        new_path: String,
-    },
+    Moved { old_path: String, new_path: String },
 }
 
 /// Folder lifecycle events
 #[derive(Debug, Clone)]
 pub enum FolderEvent {
     /// A folder was created
-    Created {
-        rel_path: String,
-    },
+    Created { rel_path: String },
     /// A folder was renamed (affects all docs inside)
     Renamed {
         old_path: String,
@@ -144,7 +130,3 @@ mod tests {
         }
     }
 }
-
-
-
-
