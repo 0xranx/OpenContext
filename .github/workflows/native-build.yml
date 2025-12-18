@@ -250,6 +250,28 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
+      - name: Update optionalDependencies versions
+        working-directory: crates/opencontext-node
+        run: |
+          node << 'SCRIPT'
+          const fs = require('fs');
+          const pkg = require('./package.json');
+          const version = pkg.version;
+          
+          // Update optionalDependencies to match the current version
+          if (pkg.optionalDependencies) {
+            for (const dep of Object.keys(pkg.optionalDependencies)) {
+              if (dep.startsWith('@aicontextlab/core-native-')) {
+                pkg.optionalDependencies[dep] = version;
+                console.log(`Updated ${dep} to ${version}`);
+              }
+            }
+          }
+          
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          console.log('package.json updated');
+          SCRIPT
+      
       - name: Publish main package
         working-directory: crates/opencontext-node
         run: npm publish --access public
