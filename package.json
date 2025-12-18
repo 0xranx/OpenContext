@@ -25,6 +25,8 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "tauri:build:mac": "tauri build --target universal-apple-darwin",
+    "tauri:build:win": "echo '⚠️  Windows 构建需要在 Windows 上执行，或使用 GitHub Actions' && echo '运行: gh workflow run desktop-build.yml' && exit 1",
     "api:dev": "node scripts/api-server.js"
   },
   "keywords": [

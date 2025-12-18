@@ -1,0 +1,145 @@
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/desktop-v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#desktop-v}"
+          else
+            VERSION="0.0.0-dev"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: desktop-v${{ steps.get_version.outputs.version }}
+          name: OpenContext Desktop v${{ steps.get_version.outputs.version }}
+          body: |
+            ## OpenContext Desktop v${{ steps.get_version.outputs.version }}
+            
+            ### 下载
+            - **macOS**: 下载 `.dmg` 文件，双击安装
+            - **Windows**: 下载 `.msi` 或 `.exe` 文件安装
+            
+            ### 更新日志
+            请查看 [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+          draft: true
+          prerelease: false
+
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: universal-apple-darwin
+            artifact_name: macos
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Protobuf (macOS)
+        if: matrix.platform == 'macos-latest'
+        run: brew install protobuf
+
+      - name: Install Protobuf (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: choco install protoc -y
+
+      - name: Install npm dependencies
+        run: npm ci --omit=optional
+
+      - name: Update version in tauri.conf.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+            conf.version = '${{ needs.create-release.outputs.version }}';
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2));
+          "
+
+      - name: Build Tauri app (macOS)
+        if: matrix.platform == 'macos-latest'
+        run: npm run tauri build -- --target universal-apple-darwin
+
+      - name: Build Tauri app (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: npm run tauri build
+
+      - name: Upload to Release (macOS)
+        if: matrix.platform == 'macos-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: desktop-v${{ needs.create-release.outputs.version }}
+          files: |
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+      - name: Upload to Release (Windows)
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: desktop-v${{ needs.create-release.outputs.version }}
+          files: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+
+  publish-release:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: desktop-v${{ needs.create-release.outputs.version }}
+          draft: false
