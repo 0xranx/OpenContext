@@ -1,7 +1,7 @@
 //! Document indexer
 
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use regex::Regex;
 use urlencoding::decode;
@@ -32,9 +32,7 @@ fn parse_idea_marker(line: &str) -> Option<(String, String)> {
     if !trimmed.starts_with("[//]: # (") || !trimmed.ends_with(')') {
         return None;
     }
-    let inner = trimmed
-        .strip_prefix("[//]: # (")?
-        .strip_suffix(')')?;
+    let inner = trimmed.strip_prefix("[//]: # (")?.strip_suffix(')')?;
     let mut id = None;
     let mut created_at = None;
     for part in inner.split_whitespace() {
@@ -115,7 +113,11 @@ fn parse_doc_href(href: &str) -> (Option<String>, Option<String>) {
             }
         }
     }
-    let stable_id = if stable_id.is_empty() { None } else { Some(stable_id) };
+    let stable_id = if stable_id.is_empty() {
+        None
+    } else {
+        Some(stable_id)
+    };
     (stable_id, path_param)
 }
 
@@ -164,7 +166,11 @@ fn append_reference_summary(
                 lines.push(format!("文档: {} — {}", title, summary));
             }
         } else if href.starts_with("oc://idea/") {
-            let title = if !label.is_empty() { label } else { "想法".to_string() };
+            let title = if !label.is_empty() {
+                label
+            } else {
+                "想法".to_string()
+            };
             lines.push(format!("想法: {}", title));
         }
     }
@@ -336,17 +342,26 @@ impl Indexer {
                             .unwrap_or("")
                             .trim()
                             .to_string();
-                        let entry_content = append_reference_summary(&entry.content, &doc_by_stable, &doc_by_path);
+                        let entry_content =
+                            append_reference_summary(&entry.content, &doc_by_stable, &doc_by_path);
                         let id = format!("{}#{}", doc.rel_path, entry.id);
                         all_chunks.push(Chunk {
                             id,
                             file_path: doc.rel_path.clone(),
                             content: entry_content,
                             heading_path: String::new(),
-                            section_title: if title_line.is_empty() { None } else { Some(title_line) },
+                            section_title: if title_line.is_empty() {
+                                None
+                            } else {
+                                Some(title_line)
+                            },
                             doc_type: Some("idea".to_string()),
                             entry_id: Some(entry.id),
-                            entry_date: if entry_date.is_empty() { None } else { Some(entry_date) },
+                            entry_date: if entry_date.is_empty() {
+                                None
+                            } else {
+                                Some(entry_date)
+                            },
                             entry_created_at: Some(entry.created_at),
                             chunk_index: i,
                             vector: vec![], // Will be filled below
@@ -478,10 +493,18 @@ impl Indexer {
                     file_path: rel_path.to_string(),
                     content: entry.content,
                     heading_path: String::new(),
-                    section_title: if title_line.is_empty() { None } else { Some(title_line) },
+                    section_title: if title_line.is_empty() {
+                        None
+                    } else {
+                        Some(title_line)
+                    },
                     doc_type: Some("idea".to_string()),
                     entry_id: Some(entry.id),
-                    entry_date: if entry_date.is_empty() { None } else { Some(entry_date) },
+                    entry_date: if entry_date.is_empty() {
+                        None
+                    } else {
+                        Some(entry_date)
+                    },
                     entry_created_at: Some(entry.created_at),
                     chunk_index: i,
                     vector: vec![],
