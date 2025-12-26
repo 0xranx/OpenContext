@@ -205,15 +205,9 @@ export function AIContextProvider({ children }) {
     const messages = await prepareReflectionContext(threadEntries);
 
     try {
-      await api.streamAIChat(
-        messages,
-        (token) => {
-          onToken?.(token);
-        },
-        (error) => {
-          throw error;
-        }
-      );
+      await api.streamAIChat(messages, (token) => {
+        onToken?.(token);
+      });
     } finally {
       setIsGenerating(false);
     }

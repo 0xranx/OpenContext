@@ -64,6 +64,7 @@ export default function IdeaTimeline({
   // AI 反思的状态
   const [reflectingThreadId, setReflectingThreadId] = useState(null);
   const [reflectionText, setReflectionText] = useState('');
+  const [reflectionError, setReflectionError] = useState('');
   const [isReflecting, setIsReflecting] = useState(false);
   const reflectionInputRef = useRef(null);
   const [animatedEntryId, setAnimatedEntryId] = useState(null);
@@ -548,6 +549,7 @@ export default function IdeaTimeline({
 
     setReflectingThreadId(threadId);
     setReflectionText('');
+    setReflectionError('');
     setIsReflecting(true);
 
     try {
@@ -556,11 +558,12 @@ export default function IdeaTimeline({
       });
     } catch (err) {
       console.error('AI reflection failed:', err);
-      setReflectionText(t('idea.reflectError', 'AI 反思失败，请检查 AI 配置或稍后重试。'));
+      setReflectionError(err?.message || t('idea.reflectError', 'AI 反思失败，请检查 AI 配置或稍后重试。'));
     } finally {
       setIsReflecting(false);
     }
   }, [isAIAvailable, isReflecting, generateReflection, t]);
+
 
   const handleSaveReflection = useCallback(async () => {
     if (!reflectionText.trim() || !reflectingThreadId) return;
@@ -569,6 +572,7 @@ export default function IdeaTimeline({
       await onAddAIReflection?.(reflectingThreadId, reflectionText);
       setReflectingThreadId(null);
       setReflectionText('');
+      setReflectionError('');
     } catch (err) {
       console.error('Failed to save AI reflection:', err);
     }
@@ -577,6 +581,7 @@ export default function IdeaTimeline({
   const handleCancelReflection = useCallback(() => {
     setReflectingThreadId(null);
     setReflectionText('');
+    setReflectionError('');
   }, []);
 
   const handleRequestDelete = useCallback((entryId, threadId) => {
@@ -609,6 +614,11 @@ export default function IdeaTimeline({
     }
     return entries;
   }, [allEntriesGrouped]);
+
+  const handleRetryReflection = useCallback((threadId) => {
+    const entries = getThreadEntries(threadId);
+    handleStartReflect(threadId, entries);
+  }, [getThreadEntries, handleStartReflect]);
 
   // 注册日期 ref
   const setDateRef = useCallback((dateKey, el) => {
@@ -1081,6 +1091,30 @@ export default function IdeaTimeline({
                                           <span>{t('idea.reflecting', 'AI 正在思考...')}</span>
                                         </div>
                                       )}
+                                      {reflectionError && !isReflecting && (
+                                        <div className="space-y-2">
+                                          <div className="flex items-start gap-2 text-[13px] text-red-500">
+                                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 mt-1" />
+                                            <span className="whitespace-pre-wrap break-words">{reflectionError}</span>
+                                          </div>
+                                          <div className="flex items-center gap-3">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRetryReflection(e.threadId)}
+                                              className="text-[12px] text-blue-500 hover:text-blue-700 font-medium transition-colors"
+                                            >
+                                              {t('idea.retry', '重试')}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={handleCancelReflection}
+                                              className="text-[12px] text-gray-400 hover:text-gray-600 transition-colors"
+                                            >
+                                              {t('common.cancel', '取消')}
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
                                       {/* 生成中：只读显示 + 光标动画 */}
                                       {reflectionText && isReflecting && (
                                         <div className="!text-[14px] leading-[1.6] text-gray-500 whitespace-pre-wrap break-words">
@@ -1089,7 +1123,7 @@ export default function IdeaTimeline({
                                         </div>
                                       )}
                                       {/* 生成完成：可编辑 textarea */}
-                                      {!isReflecting && (
+                                      {!isReflecting && !reflectionError && (
                                         <>
                                           <textarea
                                             ref={reflectionInputRef}

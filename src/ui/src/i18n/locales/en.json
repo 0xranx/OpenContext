@@ -58,6 +58,7 @@
     "aiNotConfigured": "AI not configured. Go to Settings to set up.",
     "untitled": "Untitled idea",
     "ideas": "Ideas",
+    "retry": "Retry",
     "deleteEntryConfirm": "Delete this idea?"
   },
 

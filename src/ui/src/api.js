@@ -397,7 +397,11 @@ export async function streamAIChat(messages, onToken, onError) {
           if (error) {
             if (!resolved) {
               resolved = true;
-              onError?.(new Error(error));
+              try {
+                onError?.(new Error(error));
+              } catch (err) {
+                // ignore handler errors to avoid swallowing rejection
+              }
               if (unlisten) unlisten();
               reject(new Error(error));
             }
@@ -464,8 +468,9 @@ export async function streamAIChat(messages, onToken, onError) {
           try {
             const data = JSON.parse(line.slice(6));
             if (data.error) {
-              onError?.(new Error(data.error));
-              return;
+              const err = new Error(data.error);
+              onError?.(err);
+              throw err;
             }
             if (data.content) {
               onToken?.(data.content);
@@ -481,6 +486,7 @@ export async function streamAIChat(messages, onToken, onError) {
     }
   } catch (error) {
     onError?.(error);
+    throw error;
   }
 }
 
