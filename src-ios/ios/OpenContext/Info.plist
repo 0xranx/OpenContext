@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.anonymous.opencontext</string>
+          <string>com.contextlab.opencontext</string>
         </array>
       </dict>
     </array>

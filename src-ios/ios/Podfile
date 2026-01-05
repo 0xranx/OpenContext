@@ -60,6 +60,14 @@ target 'OpenContext' do
       :mac_catalyst_enabled => false
     )
 
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        if config.name == 'Release'
+          config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+        end
+      end
+    end
+
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
     installer.target_installation_results.pod_target_installation_results

@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.opencontext"
+      "bundleIdentifier": "com.contextlab.opencontext"
     }
   }
 }
