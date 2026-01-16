@@ -44,11 +44,11 @@ export function conditionalClass(condition, trueClass, falseClass = '') {
  */
 export const buttonStyles = {
   base: 'rounded transition-colors',
-  primary: 'bg-blue-600 text-white hover:bg-blue-700',
-  secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
-  ghost: 'text-gray-600 hover:bg-gray-100',
-  danger: 'border-red-200 text-red-600 hover:bg-red-50',
-  active: 'bg-blue-50 text-blue-600',
+  primary: 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400',
+  secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700',
+  ghost: 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800',
+  danger: 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40',
+  active: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
   toolbar: 'p-1 min-w-[24px] h-[26px] flex items-center justify-center',
 };
 
@@ -56,12 +56,11 @@ export const buttonStyles = {
  * Common text style combinations.
  */
 export const textStyles = {
-  label: 'text-xs font-medium text-gray-500',
-  labelActive: 'text-xs font-medium text-blue-600',
-  heading: 'font-semibold text-gray-900',
-  body: 'text-sm text-gray-700',
-  muted: 'text-xs text-gray-400',
+  label: 'text-xs font-medium text-gray-500 dark:text-slate-400',
+  labelActive: 'text-xs font-medium text-blue-600 dark:text-blue-300',
+  heading: 'font-semibold text-gray-900 dark:text-slate-100',
+  body: 'text-sm text-gray-700 dark:text-slate-300',
+  muted: 'text-xs text-gray-400 dark:text-slate-500',
 };
 
 export default cn;
-

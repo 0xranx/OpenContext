@@ -16,7 +16,6 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { formatRelativeTime, formatDateDisplay } from '../utils/ideaUtils';
-import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAI } from '../context/AIContext';
 import styles from './IdeaTimeline.module.css';
 import PageRefPicker from '../editor/tiptap/PageRefPicker';
@@ -641,31 +640,30 @@ export default function IdeaTimeline({
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
+    <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 overflow-hidden">
       {/* Header */}
-      <header className="h-12 flex items-center justify-between px-6 border-b border-gray-50 shrink-0">
-        <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
+      <header className="h-12 flex items-center justify-between px-6 border-b border-gray-50 dark:border-zinc-800 shrink-0">
+        <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-zinc-500 font-medium">
           <span>{t('idea.title', '想法')}</span>
           <span>/</span>
           {boxLabel ? (
             <>
-              <span className="text-gray-600 uppercase tracking-wider text-xs">{boxLabel}</span>
+              <span className="text-gray-600 dark:text-zinc-400 uppercase tracking-wider text-xs">{boxLabel}</span>
               <span>/</span>
             </>
           ) : null}
-          <span className="text-gray-900 uppercase tracking-wider text-xs">
+          <span className="text-gray-900 dark:text-zinc-200 uppercase tracking-wider text-xs">
             {formatDateDisplay(selectedDate)}
           </span>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={onRefresh}
-            className="p-1 text-gray-300 hover:text-gray-600 transition-colors"
+            className="p-1 text-gray-300 hover:text-gray-600 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors"
             title={t('common.refresh', 'Refresh')}
           >
             <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <LanguageSwitcher />
         </div>
       </header>
 
@@ -682,10 +680,10 @@ export default function IdeaTimeline({
               onPaste={handleInputPaste}
               onDrop={handleInputDrop}
               onDragOver={handleInputDragOver}
-              className="w-full min-h-[40px] text-2xl font-medium text-gray-800 placeholder-gray-300 border-none focus:ring-0 focus:outline-none resize-none bg-transparent p-0"
+              className="w-full min-h-[40px] text-2xl font-medium text-gray-800 dark:text-zinc-200 placeholder-gray-300 dark:placeholder-zinc-600 border-none focus:ring-0 focus:outline-none resize-none bg-transparent p-0"
               placeholder={t('idea.placeholder', "有什么新想法?")}
               rows={1}
-              style={{ caretColor: '#374151' }}
+              style={{ caretColor: '#71717a' }} // zinc-500
             />
             {inputImages.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -694,12 +692,12 @@ export default function IdeaTimeline({
                     <img
                       src={src}
                       alt={`entry-image-${idx + 1}`}
-                      className="h-16 w-16 object-cover rounded border border-gray-200"
+                      className="h-16 w-16 object-cover rounded border border-gray-200 dark:border-zinc-700"
                     />
                     <button
                       type="button"
                       onClick={() => setInputImages((prev) => prev.filter((_, i) => i !== idx))}
-                      className="absolute -top-1 -right-1 rounded-full bg-white shadow border border-gray-200 p-[2px] text-gray-400 hover:text-gray-600"
+                      className="absolute -top-1 -right-1 rounded-full bg-white dark:bg-zinc-800 shadow border border-gray-200 dark:border-zinc-700 p-[2px] text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200"
                       aria-label={t('common.remove', '移除')}
                     >
                       <XMarkIcon className="w-3 h-3" />
@@ -735,7 +733,7 @@ export default function IdeaTimeline({
                     <button
                       type="button"
                       onClick={() => setInputRefs((prev) => prev.filter((_, i) => i !== idx))}
-                      className="mt-1 rounded-full border border-gray-200 bg-white p-1 text-gray-400 hover:text-gray-600"
+                      className="mt-1 rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200"
                       aria-label={t('common.remove', '移除')}
                     >
                       <XMarkIcon className="w-3 h-3" />
@@ -745,7 +743,7 @@ export default function IdeaTimeline({
               </div>
             )}
             <div className="flex items-center justify-between mt-2 pt-2">
-              <div className="flex gap-3 text-gray-300">
+              <div className="flex gap-3 text-gray-300 dark:text-zinc-600">
                 <input
                   ref={inputImageInputRef}
                   type="file"
@@ -756,7 +754,7 @@ export default function IdeaTimeline({
                 <button
                   type="button"
                   onClick={() => inputImageInputRef.current?.click()}
-                  className="text-gray-300 hover:text-gray-500 transition-colors"
+                  className="text-gray-300 dark:text-zinc-600 hover:text-gray-500 dark:hover:text-zinc-400 transition-colors"
                   title={t('common.addImage', '添加图片')}
                 >
                   <PhotoIcon className="w-5 h-5" />
@@ -767,7 +765,7 @@ export default function IdeaTimeline({
                     setRefTarget('main');
                     setIsPageRefOpen(true);
                   }}
-                  className="text-gray-300 hover:text-gray-500 transition-colors"
+                  className="text-gray-300 dark:text-zinc-600 hover:text-gray-500 dark:hover:text-zinc-400 transition-colors"
                   title={t('pageRef.title', 'Reference page')}
                 >
                   <span className="font-semibold text-base">@</span>
@@ -776,7 +774,7 @@ export default function IdeaTimeline({
               <button
                 onClick={handlePost}
                 disabled={(!inputText.trim() && inputImages.length === 0 && inputRefs.length === 0) || isPosting}
-                className="bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-5 py-1.5 rounded-full text-sm font-medium transition-all shadow-sm active:scale-95"
+                className="bg-gray-900 hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white disabled:bg-gray-300 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white px-5 py-1.5 rounded-full text-sm font-medium transition-all shadow-sm active:scale-95"
               >
                 {isPosting ? t('common.posting', '发布中...') : t('idea.post', '发布')}
               </button>
@@ -799,10 +797,10 @@ export default function IdeaTimeline({
                   >
                     {/* Date Header */}
                     <div className="flex items-center gap-3 mb-4 mt-8 first:mt-0">
-                      <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                      <div className="text-[11px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
                         {formatDateDisplay(date)}
                       </div>
-                      <div className="flex-1 h-[1px] bg-gray-100" />
+                      <div className="flex-1 h-[1px] bg-gray-100 dark:bg-zinc-800" />
                     </div>
 
                     {/* Entries for this date */}
@@ -846,7 +844,7 @@ export default function IdeaTimeline({
                               {/* Ball - 调大尺寸便于查看 */}
                               <div className={`${styles.ball} ${e.type === 'ai' ? styles.ballAi : styles.ballUser}`}>
                                 {e.type === 'ai' && (
-                                  <SparklesIcon className="w-3 h-3 text-orange-500" />
+                                  <SparklesIcon className="w-3 h-3 text-orange-500 dark:text-orange-400" />
                                 )}
                               </div>
                   </div>
@@ -876,20 +874,20 @@ export default function IdeaTimeline({
                       )}
 
                                   {/* Thread Actions - 只在 hover 时显示 */}
-                                  <div className="mt-2 flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] text-gray-400">
+                                  <div className="mt-2 flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] text-gray-400 dark:text-zinc-500">
                                     {e.isLastInThread && replyingThreadId !== e.threadId && reflectingThreadId !== e.threadId && (
                                       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-opacity">
                             <button
                                           onClick={() => handleStartContinue(e.threadId)}
-                                          className="text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
+                                          className="text-gray-400 dark:text-zinc-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
                             >
                                           {t('idea.continue', '继续写')}
                             </button>
-                                        <span className="text-gray-200">·</span>
+                                        <span className="text-gray-200 dark:text-zinc-700">·</span>
                                         <button 
                                           onClick={() => handleStartReflect(e.threadId, getThreadEntries(e.threadId))}
                                           disabled={!isAIAvailable || isReflecting}
-                                          className="text-gray-400 hover:text-orange-500 flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                          className="text-gray-400 dark:text-zinc-500 hover:text-orange-500 dark:hover:text-orange-400 flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                           title={!isAIAvailable ? t('idea.aiNotConfigured', 'AI 未配置，请前往设置页面配置') : ''}
                                         >
                                           <SparklesIcon className="w-3 h-3" />
@@ -897,10 +895,10 @@ export default function IdeaTimeline({
                             </button>
                                         {onRequestMoveThread ? (
                                           <>
-                                            <span className="text-gray-200">·</span>
+                                            <span className="text-gray-200 dark:text-zinc-700">·</span>
                                             <button
                                               onClick={() => onRequestMoveThread({ threadId: e.threadId, threadTitle: e.threadTitle })}
-                                              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                              className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
                                             >
                                               {t('idea.moveThread', '移动')}
                                             </button>
@@ -918,14 +916,14 @@ export default function IdeaTimeline({
                                       <button
                                         type="button"
                                         onClick={handleConfirmDelete}
-                                        className="text-red-500 hover:text-red-600 transition-colors"
+                                        className="text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                                       >
                                         {t('common.delete', '删除')}
                                       </button>
                                       <button
                                         type="button"
                                         onClick={handleCancelDelete}
-                                        className="text-gray-400 hover:text-gray-500 transition-colors"
+                                        className="text-gray-400 hover:text-gray-500 dark:text-zinc-500 dark:hover:text-zinc-400 transition-colors"
                                       >
                                         {t('common.cancel', '取消')}
                                       </button>
@@ -935,7 +933,7 @@ export default function IdeaTimeline({
                                       <button
                                         type="button"
                                         onClick={() => handleRequestDelete(e.id, e.threadId)}
-                                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-colors"
+                                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors"
                                         title={t('common.delete', '删除')}
                                       >
                                         <TrashIcon className="w-3.5 h-3.5" />
@@ -970,7 +968,7 @@ export default function IdeaTimeline({
                                     onPaste={handleReplyPaste}
                                     onDrop={handleReplyDrop}
                                     onDragOver={handleReplyDragOver}
-                                    className="w-full min-h-[24px] text-[15px] leading-relaxed text-gray-900 placeholder-gray-300 border-none focus:ring-0 focus:outline-none resize-none bg-transparent p-0"
+                                    className="w-full min-h-[24px] text-[15px] leading-relaxed text-gray-900 dark:text-zinc-200 placeholder-gray-300 dark:placeholder-zinc-600 border-none focus:ring-0 focus:outline-none resize-none bg-transparent p-0"
                                     placeholder={t('idea.continuePlaceholder', '继续这个想法...')}
                                     rows={1}
                                     style={{ height: 'auto', minHeight: '24px' }}
@@ -986,12 +984,12 @@ export default function IdeaTimeline({
                                           <img
                                             src={src}
                                             alt={`reply-image-${idx + 1}`}
-                                            className="h-16 w-16 object-cover rounded border border-gray-200"
+                                            className="h-16 w-16 object-cover rounded border border-gray-200 dark:border-zinc-700"
                                           />
                                           <button
                                             type="button"
                                             onClick={() => setReplyImages((prev) => prev.filter((_, i) => i !== idx))}
-                                            className="absolute -top-1 -right-1 rounded-full bg-white shadow border border-gray-200 p-[2px] text-gray-400 hover:text-gray-600"
+                                            className="absolute -top-1 -right-1 rounded-full bg-white dark:bg-zinc-800 shadow border border-gray-200 dark:border-zinc-700 p-[2px] text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200"
                                             aria-label={t('common.remove', '移除')}
                                           >
                                             <XMarkIcon className="w-3 h-3" />
@@ -1027,7 +1025,7 @@ export default function IdeaTimeline({
                                           <button
                                             type="button"
                                             onClick={() => setReplyRefs((prev) => prev.filter((_, i) => i !== idx))}
-                                            className="mt-1 rounded-full border border-gray-200 bg-white p-1 text-gray-400 hover:text-gray-600"
+                                            className="mt-1 rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200"
                                             aria-label={t('common.remove', '移除')}
                                           >
                                             <XMarkIcon className="w-3 h-3" />
@@ -1037,7 +1035,7 @@ export default function IdeaTimeline({
                                     </div>
                                   )}
                                   <div className="flex items-center justify-between mt-2">
-                                    <span className="text-[10px] text-gray-300 font-medium select-none">
+                                    <span className="text-[10px] text-gray-300 dark:text-zinc-600 font-medium select-none">
                                       {t('idea.continueHint', 'Enter 保存 · Esc 取消')}
                                     </span>
                                     <div className="flex items-center gap-2">
@@ -1051,7 +1049,7 @@ export default function IdeaTimeline({
                                       <button
                                         type="button"
                                         onClick={() => replyImageInputRef.current?.click()}
-                                        className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                                        className="text-gray-400 hover:text-blue-600 dark:text-zinc-500 dark:hover:text-blue-400 transition-colors p-1"
                                         title={t('common.addImage', '添加图片')}
                                       >
                                         <PhotoIcon className="w-4 h-4" />
@@ -1062,7 +1060,7 @@ export default function IdeaTimeline({
                                           setRefTarget('reply');
                                           setIsPageRefOpen(true);
                                         }}
-                                        className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                                        className="text-gray-400 hover:text-blue-600 dark:text-zinc-500 dark:hover:text-blue-400 transition-colors p-1"
                                         title={t('pageRef.title', 'Reference')}
                                       >
                                         <span className="text-sm font-semibold">@</span>
@@ -1070,7 +1068,7 @@ export default function IdeaTimeline({
                                       <button
                                         onClick={handleSubmitContinue}
                                         disabled={(!replyText.trim() && replyImages.length === 0 && replyRefs.length === 0) || isReplying}
-                                        className="text-gray-400 hover:text-blue-600 disabled:text-gray-200 transition-colors p-1"
+                                        className="text-gray-400 hover:text-blue-600 dark:text-zinc-500 dark:hover:text-blue-400 disabled:text-gray-200 dark:disabled:text-zinc-700 transition-colors p-1"
                                         title={t('common.save', '保存')}
                                       >
                                         {isReplying ? (
@@ -1095,7 +1093,7 @@ export default function IdeaTimeline({
                                 <div className={`${styles.lineTop} ${styles.lineAi}`} />
                                 {/* AI Ball - 与普通 entry 保持对齐 */}
                                 <div className={`${styles.ball} ${styles.ballAi} ${isReflecting ? 'animate-pulse' : ''}`}>
-                                  <SparklesIcon className="w-3 h-3 text-orange-500" />
+                                  <SparklesIcon className="w-3 h-3 text-orange-500 dark:text-orange-400" />
                                 </div>
                                 {/* 不需要向下的连接线，AI 反思是 thread 的终点 */}
                               </div>
@@ -1106,8 +1104,8 @@ export default function IdeaTimeline({
                                   <div className={styles.entryBody}>
                                     <div className="relative pt-1">
                                       {isReflecting && !reflectionText && (
-                                        <div className="flex items-center gap-2 !text-[14px] text-gray-400">
-                                          <ArrowPathIcon className="w-4 h-4 animate-spin text-orange-500" />
+                                        <div className="flex items-center gap-2 !text-[14px] text-gray-400 dark:text-zinc-500">
+                                          <ArrowPathIcon className="w-4 h-4 animate-spin text-orange-500 dark:text-orange-400" />
                                           <span>{t('idea.reflecting', 'AI 正在思考...')}</span>
                                         </div>
                                       )}
@@ -1137,7 +1135,7 @@ export default function IdeaTimeline({
                                       )}
                                       {/* 生成中：只读显示 + 光标动画 */}
                                       {reflectionText && isReflecting && (
-                                        <div className="!text-[14px] leading-[1.6] text-gray-500 whitespace-pre-wrap break-words">
+                                        <div className="!text-[14px] leading-[1.6] text-gray-500 dark:text-zinc-400 whitespace-pre-wrap break-words">
                                           {reflectionText}
                                           <span className="inline-block w-1.5 h-4 bg-orange-400 ml-0.5 animate-pulse" />
                                         </div>
@@ -1149,8 +1147,8 @@ export default function IdeaTimeline({
                                             ref={reflectionInputRef}
                                             value={reflectionText}
                                             onChange={(e) => setReflectionText(e.target.value)}
-                                            className="w-full min-h-0 !text-[14px] leading-[1.6] text-gray-500 
-                                              placeholder-gray-300 border-none focus:ring-0 focus:outline-none 
+                                            className="w-full min-h-0 !text-[14px] leading-[1.6] text-gray-500 dark:text-zinc-400
+                                              placeholder-gray-300 dark:placeholder-zinc-600 border-none focus:ring-0 focus:outline-none 
                                               resize-none bg-transparent p-0"
                                             style={{ height: 'auto', minHeight: '0px' }}
                                             onInput={(e) => {
@@ -1159,20 +1157,20 @@ export default function IdeaTimeline({
                                             }}
                                           />
                                           <div className="flex items-center justify-between mt-3">
-                                            <span className="text-[10px] text-gray-300 font-medium select-none">
+                                            <span className="text-[10px] text-gray-300 dark:text-zinc-600 font-medium select-none">
                                               {t('idea.reflectionEditable', '可编辑 AI 内容')}
                                             </span>
                                             <div className="flex items-center gap-2">
                                               <button
                                                 onClick={handleCancelReflection}
-                                                className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                                                className="text-[11px] text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
                                               >
                                                 {t('common.cancel', '取消')}
                                               </button>
                                               <button
                                                 onClick={handleSaveReflection}
                                                 disabled={!reflectionText.trim()}
-                                                className="text-[11px] text-orange-500 hover:text-orange-700 font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                className="text-[11px] text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
                                               >
                                                 <PaperAirplaneIcon className="w-3 h-3" />
                                                 {t('common.save', '保存')}
@@ -1195,7 +1193,7 @@ export default function IdeaTimeline({
                 ))}
                 </div>
             ) : (
-              <div className="pl-12 text-gray-400 italic">
+              <div className="pl-12 text-gray-400 dark:text-zinc-500 italic">
                 {t('idea.empty', '还没有想法，开始记录吧！')}
               </div>
             )}

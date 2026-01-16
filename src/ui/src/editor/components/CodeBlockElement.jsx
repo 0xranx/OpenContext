@@ -94,7 +94,7 @@ const CodeBlockElement = memo((props) => {
     >
       <div
         contentEditable={false}
-        className="relative px-3 py-2 border-b border-gray-200 bg-white/60 flex items-center h-9 select-none rounded-t-lg"
+        className="relative px-3 py-2 border-b border-gray-200 bg-white/60 dark:bg-slate-900/60 flex items-center h-9 select-none rounded-t-lg"
         onMouseDown={(e) => {
           if (buttonRef.current?.contains(e.target) || dropdownRef.current?.contains(e.target)) {
             return;

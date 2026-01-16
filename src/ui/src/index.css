@@ -8,12 +8,61 @@
 }
 
 body {
-  @apply bg-white text-[#37352f] antialiased;
+  @apply bg-white text-[#37352f] antialiased dark:bg-zinc-950 dark:text-zinc-100;
 }
 
 /* Notion-like Utilities */
 .notion-header {
-  @apply sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-gray-100;
+  @apply sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-gray-100 dark:bg-zinc-950/80 dark:border-zinc-800;
+}
+
+/* Dark mode overrides for common utility colors */
+.dark .bg-white {
+  @apply bg-zinc-950;
+}
+
+.dark .bg-gray-50 {
+  @apply bg-zinc-900;
+}
+
+.dark .bg-gray-100 {
+  @apply bg-zinc-800;
+}
+
+.dark .text-gray-900 {
+  @apply text-zinc-100;
+}
+
+.dark .text-gray-800 {
+  @apply text-zinc-200;
+}
+
+.dark .text-gray-700 {
+  @apply text-zinc-300;
+}
+
+.dark .text-gray-600 {
+  @apply text-zinc-400;
+}
+
+.dark .text-gray-500 {
+  @apply text-zinc-500;
+}
+
+.dark .text-gray-400 {
+  @apply text-zinc-600;
+}
+
+.dark .border-gray-100 {
+  @apply border-zinc-800;
+}
+
+.dark .border-gray-200 {
+  @apply border-zinc-700;
+}
+
+.dark .border-gray-300 {
+  @apply border-zinc-600;
 }
 
 /* Scrollbar styling */
@@ -28,6 +77,10 @@ body {
 
 .scrollbar-thin::-webkit-scrollbar-track {
   @apply bg-transparent;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-zinc-700 hover:bg-zinc-600;
 }
 
 /* --- Code block syntax highlighting (GitHub Light theme inspired) --- */
@@ -130,6 +183,11 @@ body {
   pointer-events: none;
 }
 
+.dark .tiptap-editor.is-editor-empty:first-child::before,
+.dark .tiptap-editor p.is-editor-empty:first-child::before {
+  color: #64748b;
+}
+
 /* Tiptap table styles */
 .tiptap-table {
   border-collapse: collapse;
@@ -153,6 +211,19 @@ body {
 
 .tiptap-table .selectedCell {
   background-color: #dbeafe;
+}
+
+.dark .tiptap-table td,
+.dark .tiptap-table th {
+  border-color: #3f3f46;
+}
+
+.dark .tiptap-table th {
+  background-color: #18181b;
+}
+
+.dark .tiptap-table .selectedCell {
+  background-color: #1e3a8a;
 }
 
 /* Tiptap task list styles - Notion-like (support class-based & data-type) */
@@ -202,6 +273,11 @@ body {
   background-color: rgba(55, 53, 47, 0.04);
 }
 
+.dark .tiptap-editor li.task-item:hover,
+.dark .tiptap-editor li[data-type="taskItem"]:hover {
+  background-color: rgba(161, 161, 170, 0.12);
+}
+
 .tiptap-editor li.task-item > label,
 .tiptap-viewer li.task-item > label,
 .tiptap-editor li[data-type="taskItem"] > label,
@@ -233,12 +309,28 @@ body {
   flex-shrink: 0;
 }
 
+.dark .tiptap-editor li.task-item > label input[type="checkbox"],
+.dark .tiptap-viewer li.task-item > label input[type="checkbox"],
+.dark .tiptap-editor li[data-type="taskItem"] > label input[type="checkbox"],
+.dark .tiptap-viewer li[data-type="taskItem"] > label input[type="checkbox"] {
+  background: #18181b;
+  border-color: #3f3f46;
+}
+
 .tiptap-editor li.task-item > label input[type="checkbox"]:hover,
 .tiptap-viewer li.task-item > label input[type="checkbox"]:hover,
 .tiptap-editor li[data-type="taskItem"] > label input[type="checkbox"]:hover,
 .tiptap-viewer li[data-type="taskItem"] > label input[type="checkbox"]:hover {
   border-color: #2563eb;
   background-color: #eff6ff;
+}
+
+.dark .tiptap-editor li.task-item > label input[type="checkbox"]:hover,
+.dark .tiptap-viewer li.task-item > label input[type="checkbox"]:hover,
+.dark .tiptap-editor li[data-type="taskItem"] > label input[type="checkbox"]:hover,
+.dark .tiptap-viewer li[data-type="taskItem"] > label input[type="checkbox"]:hover {
+  border-color: #60a5fa;
+  background-color: #0b2a52;
 }
 
 .tiptap-editor li.task-item > label input[type="checkbox"]:checked,
@@ -328,6 +420,23 @@ body {
   @apply px-1.5 py-0.5 rounded bg-gray-100 text-red-600 text-sm font-mono;
 }
 
+.dark .tiptap-editor pre,
+.dark .tiptap-viewer pre,
+.dark .tiptap-code-block {
+  @apply border-zinc-800 bg-zinc-900;
+}
+
+.dark .tiptap-editor pre code,
+.dark .tiptap-viewer pre code,
+.dark .tiptap-code-block code {
+  @apply text-zinc-200;
+}
+
+.dark .tiptap-editor code:not(pre code),
+.dark .tiptap-viewer code:not(pre code) {
+  @apply bg-zinc-800 text-rose-300;
+}
+
 /* Links (including oc://) */
 .tiptap-editor a,
 .tiptap-viewer a,
@@ -395,6 +504,35 @@ body {
   text-decoration: none;
 }
 
+.dark .tiptap-editor p > a[href^="oc://doc/"]:only-child,
+.dark .tiptap-viewer p > a[href^="oc://doc/"]:only-child,
+.dark .tiptap-editor p > a[href^="oc://idea/"]:only-child,
+.dark .tiptap-viewer p > a[href^="oc://idea/"]:only-child {
+  border-color: #27272a;
+  background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+  color: #e4e4e7;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+
+.dark .tiptap-editor p > a[href^="oc://doc/"]:only-child::before,
+.dark .tiptap-viewer p > a[href^="oc://doc/"]:only-child::before {
+  background: #52525b;
+}
+
+.dark .tiptap-editor p > a[href^="oc://idea/"]:only-child::before,
+.dark .tiptap-viewer p > a[href^="oc://idea/"]:only-child::before {
+  background: #fbbf24;
+}
+
+.dark .tiptap-editor p > a[href^="oc://doc/"]:only-child:hover,
+.dark .tiptap-viewer p > a[href^="oc://doc/"]:only-child:hover,
+.dark .tiptap-editor p > a[href^="oc://idea/"]:only-child:hover,
+.dark .tiptap-viewer p > a[href^="oc://idea/"]:only-child:hover {
+  background: linear-gradient(180deg, #27272a 0%, #18181b 100%);
+  border-color: #3f3f46;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+  color: #f4f4f5;
+}
 
 /* Tiptap horizontal rule */
 .tiptap-editor hr {
@@ -404,6 +542,14 @@ body {
 /* Tiptap blockquote */
 .tiptap-editor blockquote {
   @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4;
+}
+
+.dark .tiptap-editor hr {
+  @apply border-zinc-800;
+}
+
+.dark .tiptap-editor blockquote {
+  @apply border-zinc-700 text-zinc-400;
 }
 
 /* Tiptap image styles */

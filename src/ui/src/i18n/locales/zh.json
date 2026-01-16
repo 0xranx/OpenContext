@@ -235,7 +235,17 @@
     "showApiKey": "显示 Key",
     "hideApiKey": "隐藏 Key",
     "embeddingApiKeyPlaceholder": "输入 Embedding API Key",
-    "embeddingApiKeyPlaceholderExisting": "留空保持原值，输入新值则覆盖"
+    "embeddingApiKeyPlaceholderExisting": "留空保持原值，输入新值则覆盖",
+    "appearance": "外观",
+    "theme": "主题",
+    "themeSystem": "跟随系统",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeHint": "选择“跟随系统”将自动匹配系统主题",
+    "language": "语言",
+    "languageZh": "中文",
+    "languageEn": "English",
+    "languageHint": "立即应用到应用内"
   },
 
   "search": {

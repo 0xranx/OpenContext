@@ -138,12 +138,14 @@ function SidebarItem({
   return (
     <div ref={itemRef} className="relative">
       {depth > 0 && (
-        <div className="absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: `${depth * 12 + 6}px` }} />
+        <div className="absolute top-0 bottom-0 w-px bg-gray-200 dark:bg-zinc-800" style={{ left: `${depth * 12 + 6}px` }} />
       )}
       <div
         className={`
           group flex items-start gap-2 px-3 py-1.5 min-h-[28px] text-sm cursor-pointer select-none transition-colors rounded-sm mx-2 relative
-          ${isActive ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}
+          ${isActive 
+            ? 'bg-gray-200 text-gray-900 font-medium dark:bg-zinc-800 dark:text-zinc-100' 
+            : 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}
           ${isDragOver ? 'ring-2 ring-blue-400 bg-blue-50' : ''}
         `}
         style={{ paddingLeft: `${depth * 12 + 12}px` }}
@@ -170,14 +172,14 @@ function SidebarItem({
 
         {Icon && (
           <Icon
-            className={`h-4 w-4 shrink-0 mt-0.5 ${isActive ? 'text-gray-700' : 'text-gray-400 group-hover:text-gray-500'}`}
+            className={`h-4 w-4 shrink-0 mt-0.5 ${isActive ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-400 group-hover:text-gray-500 dark:text-zinc-500'}`}
           />
         )}
 
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="truncate leading-5">{label}</div>
           {description && (
-            <div className={`text-xs truncate font-normal ${isActive ? 'text-gray-500' : 'text-gray-400'}`}>
+            <div className={`text-xs truncate font-normal ${isActive ? 'text-gray-500 dark:text-zinc-400' : 'text-gray-400 dark:text-zinc-500'}`}>
               {description}
             </div>
           )}
@@ -193,7 +195,7 @@ function SidebarItem({
         <div className="relative">
           {hasChildren && (
             <div
-              className="absolute top-0 bottom-0 w-px bg-gray-200"
+              className="absolute top-0 bottom-0 w-px bg-gray-200 dark:bg-zinc-800"
               style={{ left: `${(depth + 1) * 12 + 6}px` }}
             />
           )}
@@ -463,7 +465,7 @@ export function SidebarTree({
   return (
     <aside
       style={{ width: sidebarWidth }}
-      className="flex-shrink-0 bg-[#F7F7F5] border-r border-[#E9E9E7] flex flex-col relative group/sidebar pt-8"
+      className="flex-shrink-0 bg-[#F7F7F5] border-r border-[#E9E9E7] dark:bg-zinc-900 dark:border-zinc-800 flex flex-col relative group/sidebar pt-8"
     >
       {/* Drag Region for Traffic Lights Area */}
       <DragRegion className="absolute top-0 left-0 right-0 h-8 z-50" />
@@ -486,11 +488,11 @@ export function SidebarTree({
         <button
           type="button"
           onClick={() => onRequestSearch?.()}
-          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#5F5E5B] hover:bg-[#EFEFED] active:bg-[#E5E5E5] rounded-sm transition-colors duration-75 group font-medium"
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#5F5E5B] hover:bg-[#EFEFED] active:bg-[#E5E5E5] dark:text-zinc-300 dark:hover:bg-zinc-800 dark:active:bg-zinc-700 rounded-sm transition-colors duration-75 group font-medium"
         >
-          <MagnifyingGlassIcon className="h-4 w-4 text-[#91918E] group-hover:text-[#5F5E5B]" strokeWidth={2} />
+          <MagnifyingGlassIcon className="h-4 w-4 text-[#91918E] group-hover:text-[#5F5E5B] dark:text-zinc-500 dark:group-hover:text-zinc-300" strokeWidth={2} />
           <span className="flex-1 text-left">{t('search.searchDocs')}</span>
-          <span className="text-xs text-[#9B9A97] font-normal">⌘ K</span>
+          <span className="text-xs text-[#9B9A97] dark:text-zinc-500 font-normal">⌘ K</span>
         </button>
       </div>
 
@@ -601,32 +603,32 @@ export function SidebarTree({
         </DndContext>
       </div>
 
-      <div className="p-2 border-t border-[#E9E9E7] space-y-1">
+      <div className="p-2 border-t border-[#E9E9E7] dark:border-zinc-800 space-y-1">
         <button
           type="button"
           onClick={() => navigate(ROUTES.SETTINGS)}
           className={`
             w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-sm transition-colors duration-75 group font-medium
             ${activeView === 'settings' 
-              ? 'bg-[#EFEFED] text-[#37352F]' 
-              : 'text-[#5F5E5B] hover:bg-[#EFEFED] active:bg-[#E5E5E5]'}
+              ? 'bg-[#EFEFED] text-[#37352F] dark:bg-zinc-800 dark:text-zinc-100'
+              : 'text-[#5F5E5B] hover:bg-[#EFEFED] active:bg-[#E5E5E5] dark:text-zinc-300 dark:hover:bg-zinc-800 dark:active:bg-zinc-700'}
           `}
         >
-          <Cog6ToothIcon className={`h-4 w-4 ${activeView === 'settings' ? 'text-[#37352F]' : 'text-[#91918E] group-hover:text-[#5F5E5B]'}`} strokeWidth={2} />
+          <Cog6ToothIcon className={`h-4 w-4 ${activeView === 'settings' ? 'text-[#37352F] dark:text-zinc-100' : 'text-[#91918E] group-hover:text-[#5F5E5B] dark:text-zinc-500 dark:group-hover:text-zinc-300'}`} strokeWidth={2} />
           <span className="flex-1 text-left">{t('settings.title')}</span>
         </button>
 
         <button
           type="button"
           onClick={() => onRequestCreatePage?.('')}
-          className="flex items-center gap-2 text-sm text-[#5F5E5B] hover:text-gray-900 w-full px-3 py-1.5 rounded-sm hover:bg-[#EFEFED] active:bg-[#E5E5E5] transition-colors"
+          className="flex items-center gap-2 text-sm text-[#5F5E5B] hover:text-gray-900 dark:text-zinc-300 dark:hover:text-zinc-100 w-full px-3 py-1.5 rounded-sm hover:bg-[#EFEFED] active:bg-[#E5E5E5] dark:hover:bg-zinc-800 dark:active:bg-zinc-700 transition-colors"
         >
           <PlusIcon className="h-4 w-4" />
           <span>{t('sidebar.newPage')}</span>
         </button>
       </div>
 
-      <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-gray-300/50 transition-colors z-50" onMouseDown={startResizing} />
+      <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-gray-300/50 dark:hover:bg-zinc-700/60 transition-colors z-50" onMouseDown={startResizing} />
     </aside>
   );
 }

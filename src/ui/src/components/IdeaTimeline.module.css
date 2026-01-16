@@ -30,12 +30,26 @@
   background-color: #e5e7eb;
 }
 
+:global(.dark) .lineUser {
+  background-color: #3f3f46;
+}
+
 .lineAi {
   background-color: transparent;
   background-image: repeating-linear-gradient(
     to bottom,
     #e5e7eb,
     #e5e7eb 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+:global(.dark) .lineAi {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #3f3f46,
+    #3f3f46 4px,
     transparent 4px,
     transparent 8px
   );
@@ -59,9 +73,17 @@
   background: #e5e7eb;
 }
 
+:global(.dark) .ballUser {
+  background: #3f3f46;
+}
+
 .ballUser:hover {
   cursor: pointer;
   background: #d1d5db;
+}
+
+:global(.dark) .ballUser:hover {
+  background: #52525b;
 }
 
 .ballAi {
@@ -69,9 +91,17 @@
   border: none;
 }
 
+:global(.dark) .ballAi {
+  background: #7c2d12; /* orange-900 */
+}
+
 .ballReply {
   background: #60a5fa;
   animation: pulse 2s infinite;
+}
+
+:global(.dark) .ballReply {
+  background: #3b82f6;
 }
 
 .threadRef {
@@ -129,11 +159,19 @@
   word-break: break-word;
 }
 
+:global(.dark) .entryText {
+  color: #e4e4e7; /* zinc-200 */
+}
+
 .entryTextAi {
   font-size: 14px;
   line-height: 1.6;
   color: #6b7280;
   padding-top: 3px;
+}
+
+:global(.dark) .entryTextAi {
+  color: #a1a1aa; /* zinc-400 */
 }
 
 .entryAiIcon {
@@ -171,12 +209,20 @@
   border: 1px solid #e5e7eb;
 }
 
+:global(.dark) .entryImage {
+  border-color: #27272a;
+}
+
 .entryMeta {
   font-size: 10px;
   color: #d1d5db;
   white-space: nowrap;
   padding-top: 2px;
   flex-shrink: 0;
+}
+
+:global(.dark) .entryMeta {
+  color: #52525b; /* zinc-600 */
 }
 
 .refCard {
@@ -190,9 +236,19 @@
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+:global(.dark) .refCard {
+  border-color: #27272a;
+  background: #18181b;
+}
+
 .refCard:hover {
   border-color: #d1d5db;
   box-shadow: 0 6px 14px rgba(17, 24, 39, 0.06);
+}
+
+:global(.dark) .refCard:hover {
+  border-color: #3f3f46;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
 }
 
 .refCardIcon {
@@ -214,10 +270,22 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%23f97316'><path stroke-linecap='round' stroke-linejoin='round' d='M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z'/></svg>");
 }
 
+:global(.dark) .refCardIconIdea {
+  background-color: #431407; /* orange-950 */
+  color: #fb923c; /* orange-400 */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%23fb923c'><path stroke-linecap='round' stroke-linejoin='round' d='M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z'/></svg>");
+}
+
 .refCardIconDoc {
   background-color: #f3f4f6;
   color: #6b7280;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%236b7280'><path stroke-linecap='round' stroke-linejoin='round' d='M19.5 14.25V6.75A2.25 2.25 0 0 0 17.25 4.5h-7.5A2.25 2.25 0 0 0 7.5 6.75v10.5A2.25 2.25 0 0 0 9.75 19.5h7.5A2.25 2.25 0 0 0 19.5 17.25v-3.75M8.25 8.25h7.5M8.25 11.25h7.5M8.25 14.25h4.5'/></svg>");
+}
+
+:global(.dark) .refCardIconDoc {
+  background-color: #27272a; /* zinc-800 */
+  color: #a1a1aa; /* zinc-400 */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%23a1a1aa'><path stroke-linecap='round' stroke-linejoin='round' d='M19.5 14.25V6.75A2.25 2.25 0 0 0 17.25 4.5h-7.5A2.25 2.25 0 0 0 7.5 6.75v10.5A2.25 2.25 0 0 0 9.75 19.5h7.5A2.25 2.25 0 0 0 19.5 17.25v-3.75M8.25 8.25h7.5M8.25 11.25h7.5M8.25 14.25h4.5'/></svg>");
 }
 
 .refCardContent {
@@ -234,6 +302,10 @@
   margin-bottom: 4px;
 }
 
+:global(.dark) .refCardLabel {
+  color: #52525b; /* zinc-600 */
+}
+
 .refCardTitle {
   font-size: 14px;
   font-weight: 500;
@@ -241,6 +313,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+:global(.dark) .refCardTitle {
+  color: #e4e4e7;
 }
 
 .refCardDesc {
@@ -251,6 +327,10 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+:global(.dark) .refCardDesc {
+  color: #a1a1aa;
 }
 
 .entryFirst .lineTop {

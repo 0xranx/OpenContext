@@ -76,7 +76,7 @@ export default function IdeaSidebar({
     <div className="mb-2">
       {/* Section Header */}
       <div
-        className="flex items-center gap-1 px-3 py-1 text-[11px] font-bold text-gray-500 uppercase tracking-wider hover:bg-[#EFEFED] cursor-pointer group"
+        className="flex items-center gap-1 px-3 py-1 text-[11px] font-bold text-gray-500 uppercase tracking-wider hover:bg-[#EFEFED] dark:text-zinc-500 dark:hover:bg-zinc-800 cursor-pointer group"
         onClick={onToggleExpand}
       >
         {isExpanded ? (
@@ -86,7 +86,7 @@ export default function IdeaSidebar({
         )}
         <span>{t('idea.sidebarTitle', '想法 (Ideas)')}</span>
         <button
-          className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 hover:text-gray-900"
+          className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 hover:text-gray-900 dark:hover:text-zinc-100"
           onClick={(e) => {
             e.stopPropagation();
             onCreateBox?.();
@@ -107,7 +107,7 @@ export default function IdeaSidebar({
             return (
               <div key={box} className="mb-1">
                 <div
-                  className="group flex items-center gap-2 mx-2 px-3 py-1.5 text-sm cursor-pointer transition-colors rounded-sm text-gray-600 hover:bg-gray-100"
+                  className="group flex items-center gap-2 mx-2 px-3 py-1.5 text-sm cursor-pointer transition-colors rounded-sm text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
                   onClick={() => {
                     setExpandedBoxes((prev) => {
                       const next = new Set(prev);
@@ -122,7 +122,7 @@ export default function IdeaSidebar({
                 >
                   <button
                     type="button"
-                    className="p-0.5 rounded-sm hover:bg-gray-200/70"
+                    className="p-0.5 rounded-sm hover:bg-gray-200/70 dark:hover:bg-zinc-700/50"
                     onClick={(e) => {
                       e.stopPropagation();
                       setExpandedBoxes((prev) => {
@@ -137,12 +137,12 @@ export default function IdeaSidebar({
                     }}
                   >
                     {isBoxExpanded ? (
-                      <ChevronDownIcon className="w-3 h-3 text-gray-400" />
+                      <ChevronDownIcon className="w-3 h-3 text-gray-400 dark:text-zinc-500" />
                     ) : (
-                      <ChevronRightIcon className="w-3 h-3 text-gray-400" />
+                      <ChevronRightIcon className="w-3 h-3 text-gray-400 dark:text-zinc-500" />
                     )}
                   </button>
-                  <SparklesIcon className="w-4 h-4 text-gray-400" />
+                  <SparklesIcon className="w-4 h-4 text-gray-400 dark:text-zinc-500" />
                   <span className="truncate">{label}</span>
                   <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
@@ -151,7 +151,7 @@ export default function IdeaSidebar({
                         e.stopPropagation();
                         setMenuBox((prev) => (prev === box ? null : box));
                       }}
-                      className="p-1 rounded hover:bg-gray-200/70 text-gray-400 hover:text-gray-600"
+                      className="p-1 rounded hover:bg-gray-200/70 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 dark:hover:bg-zinc-700"
                       title={t('common.edit', 'Edit')}
                     >
                       <EllipsisHorizontalIcon className="w-4 h-4" />
@@ -161,10 +161,10 @@ export default function IdeaSidebar({
 
                 {menuBox === box && (
                   <div ref={menuRef} className="relative mx-2">
-                    <div className="absolute right-2 top-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50 min-w-[140px]">
+                    <div className="absolute right-2 top-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50 min-w-[140px] dark:bg-zinc-800 dark:border-zinc-700">
                       <button
                         type="button"
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 text-left ${box === 'inbox' ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700'}`}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left ${box === 'inbox' ? 'text-gray-300 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-200'}`}
                         onClick={() => {
                           if (box === 'inbox') return;
                           setMenuBox(null);
@@ -172,12 +172,12 @@ export default function IdeaSidebar({
                         }}
                         disabled={box === 'inbox'}
                       >
-                        <PencilIcon className={`h-4 w-4 ${box === 'inbox' ? 'text-gray-300' : 'text-gray-500'}`} />
+                        <PencilIcon className={`h-4 w-4 ${box === 'inbox' ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-500 dark:text-zinc-400'}`} />
                         {t('contextMenu.rename', '重命名')}
                       </button>
                       <button
                         type="button"
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 text-left ${box === 'inbox' ? 'text-gray-300 cursor-not-allowed' : 'text-red-600'}`}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left ${box === 'inbox' ? 'text-gray-300 dark:text-zinc-600 cursor-not-allowed' : 'text-red-600 dark:text-red-400'}`}
                         onClick={() => {
                           if (box === 'inbox') return;
                           setMenuBox(null);
@@ -185,7 +185,7 @@ export default function IdeaSidebar({
                         }}
                         disabled={box === 'inbox'}
                       >
-                        <TrashIcon className={`h-4 w-4 ${box === 'inbox' ? 'text-gray-300' : 'text-red-500'}`} />
+                        <TrashIcon className={`h-4 w-4 ${box === 'inbox' ? 'text-gray-300 dark:text-zinc-600' : 'text-red-500 dark:text-red-400'}`} />
                         {t('contextMenu.delete', '删除')}
                       </button>
                     </div>
@@ -193,18 +193,18 @@ export default function IdeaSidebar({
                 )}
 
                 {isBoxExpanded && (
-                  <div className="mt-1 ml-10 pl-4 border-l border-gray-200">
+                  <div className="mt-1 ml-10 pl-4 border-l border-gray-200 dark:border-zinc-700">
                     {buildDisplayDates(availableDatesByBox[box] || []).map((dateKey) => (
                       <div
                         key={`${box}-${dateKey}`}
                         onClick={() => onSelectDate(dateKey, box)}
                         className={`flex items-center gap-2 mr-2 px-3 py-1.5 text-sm cursor-pointer transition-colors rounded-sm ${
                           selectedDate === dateKey && selectedBox === box
-                            ? 'bg-gray-200 text-gray-900 font-medium'
-                            : 'text-gray-600 hover:bg-gray-100'
+                            ? 'bg-gray-200 text-gray-900 font-medium dark:bg-zinc-800 dark:text-zinc-100'
+                            : 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                         }`}
                       >
-                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                        <CalendarIcon className="w-4 h-4 text-gray-400 dark:text-zinc-500" />
                         <span>{formatDateDisplay(dateKey)}</span>
                       </div>
                     ))}

@@ -65,7 +65,7 @@ export default function EditorApp() {
   );
 
   return (
-    <div className="min-h-screen bg-white text-[#37352f]">
+    <div className="min-h-screen bg-white text-[#37352f] dark:bg-slate-950 dark:text-slate-100">
       <div className="px-6 py-6 max-w-3xl mx-auto">
         <TiptapMarkdownEditor
           editorId={editorId}

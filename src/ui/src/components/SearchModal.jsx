@@ -34,10 +34,10 @@ function HighlightText({ text, query, maxLength = 200 }) {
   const parts = truncated.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
 
   return (
-    <span className="text-gray-500">
+    <span className="text-gray-500 dark:text-zinc-500">
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <span key={i} className="text-gray-900 font-medium border-b border-gray-300/60 bg-yellow-100/50 px-0.5 rounded-[1px]">
+          <span key={i} className="text-gray-900 dark:text-zinc-100 font-medium border-b border-gray-300/60 dark:border-zinc-700/60 bg-yellow-100/50 dark:bg-yellow-500/20 px-0.5 rounded-[1px]">
             {part}
           </span>
         ) : (
@@ -102,14 +102,14 @@ function SearchResultItem({ result, query, isSelected, onClick }) {
       className={`
         w-full text-left px-4 py-3 flex items-start gap-3 transition-colors duration-75 group
         ${isSelected 
-          ? 'bg-[rgba(55,53,47,0.08)]' 
-          : 'hover:bg-[rgba(55,53,47,0.03)]'
+          ? 'bg-[rgba(55,53,47,0.08)] dark:bg-[rgba(161,161,170,0.16)]'
+          : 'hover:bg-[rgba(55,53,47,0.03)] dark:hover:bg-[rgba(161,161,170,0.08)]'
         }
       `}
     >
       <div className={`
-        mt-0.5 p-1 flex-shrink-0 text-gray-400
-        ${isSelected ? 'text-gray-600' : ''}
+        mt-0.5 p-1 flex-shrink-0 text-gray-400 dark:text-zinc-500
+        ${isSelected ? 'text-gray-600 dark:text-zinc-300' : ''}
       `}>
         {isIdea ? (
           <SparklesIcon className="h-5 w-5" strokeWidth={1.5} />
@@ -122,7 +122,7 @@ function SearchResultItem({ result, query, isSelected, onClick }) {
       
       <div className="flex-1 min-w-0 overflow-hidden py-0.5">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className={`text-[14px] truncate ${isSelected ? 'text-gray-900 font-medium' : 'text-[#37352f] font-medium'}`}>
+          <span className={`text-[14px] truncate font-medium ${isSelected ? 'text-gray-900 dark:text-zinc-100' : 'text-[#37352f] dark:text-zinc-300'}`}>
             {displayName}
           </span>
           {/* Hidden score for debug, or could be shown very subtly */}
@@ -130,7 +130,7 @@ function SearchResultItem({ result, query, isSelected, onClick }) {
         </div>
         
         {/* Breadcrumbs / Path */}
-        <div className="flex items-center gap-1 text-[12px] text-gray-400 truncate font-normal mb-1.5 leading-none">
+        <div className="flex items-center gap-1 text-[12px] text-gray-400 dark:text-zinc-500 truncate font-normal mb-1.5 leading-none">
           <span className="truncate">{isIdea ? ideaMeta : displayPath}</span>
           {!isIdea && headingDisplay}
         </div>
@@ -143,7 +143,7 @@ function SearchResultItem({ result, query, isSelected, onClick }) {
 
         {/* Technical metadata - only show for content-level results, not aggregated docs */}
         {result.matched_by && !result.aggregate_type && (
-          <div className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-400">
+          <div className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-400 dark:text-zinc-600">
              {result.matched_by === 'vector' && (
                <>
                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -169,7 +169,7 @@ function SearchResultItem({ result, query, isSelected, onClick }) {
       {/* Enter key hint that appears on selection - Notion style */}
       {isSelected && (
         <div className="flex-shrink-0 self-center hidden sm:block">
-          <span className="text-[10px] font-medium text-gray-400 px-1.5 py-0.5 border border-gray-200 rounded">↵</span>
+          <span className="text-[10px] font-medium text-gray-400 dark:text-zinc-500 px-1.5 py-0.5 border border-gray-200 dark:border-zinc-700 rounded">↵</span>
         </div>
       )}
     </button>
@@ -380,27 +380,27 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
       
       {/* Modal - Notion style rounded corners, shadow, and background */}
       <div 
-        className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col max-h-[70vh]"
+        className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col max-h-[70vh]"
         style={{ boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.25)' }}
       >
         {/* Search Input Area */}
-        <div className="px-4 py-4 border-b border-gray-100">
+        <div className="px-4 py-4 border-b border-gray-100 dark:border-zinc-800">
           <div className="flex items-center gap-2">
             <div ref={filterRef} className="relative">
               <button
                 type="button"
                 onClick={() => setIsFilterOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 px-2 py-1 text-[12px] font-medium text-gray-500 rounded-md hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1 text-[12px] font-medium text-gray-500 dark:text-zinc-400 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors"
                 aria-haspopup="listbox"
                 aria-expanded={isFilterOpen}
               >
-                <span className="text-gray-700">
+                <span className="text-gray-700 dark:text-zinc-300">
                   {category === 'all' ? t('search.all') : category === 'doc' ? t('search.docs') : t('search.ideas')}
                 </span>
-                <ChevronDownIcon className="h-3 w-3 text-gray-400" />
+                <ChevronDownIcon className="h-3 w-3 text-gray-400 dark:text-zinc-500" />
               </button>
               {isFilterOpen && (
-                <div className="absolute left-0 mt-1 min-w-[140px] rounded-lg bg-white shadow-lg ring-1 ring-black/5 py-1 z-10">
+                <div className="absolute left-0 mt-1 min-w-[140px] rounded-lg bg-white dark:bg-zinc-800 shadow-lg ring-1 ring-black/5 dark:ring-white/5 py-1 z-10">
                   {['all', 'doc', 'idea'].map((item) => (
                     <button
                       key={item}
@@ -410,7 +410,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
                         setIsFilterOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                        category === item ? 'bg-gray-100 text-gray-800' : 'text-gray-600 hover:bg-gray-50'
+                        category === item ? 'bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-zinc-100' : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
                       }`}
                     >
                       {item === 'all' ? t('search.all') : item === 'doc' ? t('search.docs') : t('search.ideas')}
@@ -419,7 +419,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
                 </div>
               )}
             </div>
-            <div className="h-4 w-px bg-gray-200" />
+            <div className="h-4 w-px bg-gray-200 dark:bg-zinc-700" />
             <input
               ref={inputRef}
               type="text"
@@ -427,7 +427,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholderText}
-              className="flex-1 text-lg text-[#37352f] placeholder-gray-400 bg-transparent border-none focus:ring-0 p-0 outline-none leading-tight"
+              className="flex-1 text-lg text-[#37352f] dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 bg-transparent border-none focus:ring-0 p-0 outline-none leading-tight"
               autoComplete="off"
               autoCorrect="off"
               spellCheck="false"
@@ -436,7 +436,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
               >
                 <XMarkIcon className="h-4 w-4" strokeWidth={2} />
               </button>
@@ -444,7 +444,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
             <button
               type="button"
               onClick={() => inputRef.current?.focus()}
-              className="flex items-center p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              className="flex items-center p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
               aria-label={t('search.open')}
             >
               <MagnifyingGlassIcon className="h-4 w-4" />
@@ -455,20 +455,20 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
         {/* Results */}
         <div 
           ref={resultsRef}
-          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent bg-white"
+          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent bg-white dark:bg-zinc-900"
         >
           {/* Loading state */}
           {isLoading && query && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="h-5 w-5 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+              <div className="h-5 w-5 border-2 border-gray-200 dark:border-zinc-700 border-t-gray-500 dark:border-t-zinc-400 rounded-full animate-spin" />
             </div>
           )}
 
           {/* Index missing warning */}
           {indexMissing && !isLoading && (
             <div className="px-5 py-8 text-center">
-              <p className="text-gray-600 text-sm mb-2">{t('search.indexMissing')}</p>
-              <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 font-mono">
+              <p className="text-gray-600 dark:text-zinc-400 text-sm mb-2">{t('search.indexMissing')}</p>
+              <code className="text-xs bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-gray-600 dark:text-zinc-400 font-mono">
                 oc index build
               </code>
             </div>
@@ -485,7 +485,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
           {!isLoading && !error && !indexMissing && combinedResults.length > 0 && (
             <div className="py-2">
               {category !== 'doc' && ideaResults.length > 0 && (
-                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500/80 uppercase tracking-wider mb-1">
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500/80 dark:text-zinc-500 uppercase tracking-wider mb-1">
                   {t('search.ideas', 'Ideas')}
                 </div>
               )}
@@ -506,7 +506,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
                 );
               })}
               {category !== 'idea' && results.length > 0 && (
-                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500/80 uppercase tracking-wider mb-1">
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500/80 dark:text-zinc-500 uppercase tracking-wider mb-1">
                   {t('search.docs', 'Docs')}
                 </div>
               )}
@@ -532,7 +532,7 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
           {/* Empty state */}
           {!isLoading && !error && !indexMissing && query && ideaResults.length === 0 && results.length === 0 && (
             <div className="px-5 py-12 text-center">
-              <p className="text-gray-500 text-sm">{t('search.noResults')}</p>
+              <p className="text-gray-500 dark:text-zinc-500 text-sm">{t('search.noResults')}</p>
             </div>
           )}
 
@@ -540,21 +540,21 @@ export function SearchModal({ isOpen, onClose, onSelectDoc, onSelectIdea }) {
           {!query && !isLoading && (
             <div className="px-8 py-12">
               <div className="text-center">
-                <p className="text-gray-400 text-sm">{t('search.tip')}</p>
+                <p className="text-gray-400 dark:text-zinc-600 text-sm">{t('search.tip')}</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400 select-none">
+        <div className="px-4 py-2 bg-gray-50 dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-gray-400 dark:text-zinc-500 select-none">
           <span className="flex items-center gap-2">
             <span className="flex gap-0.5">
-              <kbd className="font-sans px-1 bg-white border border-gray-200 rounded text-gray-500">↑</kbd>
-              <kbd className="font-sans px-1 bg-white border border-gray-200 rounded text-gray-500">↓</kbd>
+              <kbd className="font-sans px-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded text-gray-500 dark:text-zinc-400">↑</kbd>
+              <kbd className="font-sans px-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded text-gray-500 dark:text-zinc-400">↓</kbd>
             </span>
             <span>{t('search.navigate')}</span>
-            <kbd className="font-sans px-1 bg-white border border-gray-200 rounded text-gray-500 ml-2">↵</kbd>
+            <kbd className="font-sans px-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded text-gray-500 dark:text-zinc-400 ml-2">↵</kbd>
             <span>{t('search.open')}</span>
           </span>
           <span className="flex items-center gap-1 opacity-60">

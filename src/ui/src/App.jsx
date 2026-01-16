@@ -27,7 +27,6 @@ import { useIdeaLoader } from './hooks/useIdeaLoader';
 import { useScrollSpy } from './hooks/useScrollSpy';
 import { useTauriDrag } from './hooks/useTauriDrag.jsx';
 import { PageSkeleton, SidebarSkeleton } from './components/Skeletons';
-import { LanguageSwitcher } from './components/LanguageSwitcher';
 import IdeaTimeline from './components/IdeaTimeline';
 import * as api from './api';
 import { writeClipboardText } from './utils/clipboard';
@@ -42,14 +41,16 @@ import {
 import { basename, dirname } from './utils/path';
 import IdeaTimelineDemo from './demo/IdeaTimelineDemo';
 
-// Notion-like Light Mode Styles
+// Notion-like Styles
 const BASE_DOCUMENT_CLASSES = [
   'prose',
-  'prose-slate',
+  'prose-zinc',
+  'dark:prose-invert',
   'max-w-none',
   // Headings
   'prose-headings:text-gray-900',
   'prose-headings:font-semibold',
+  'dark:prose-headings:text-zinc-100',
   'prose-h1:text-4xl',
   'prose-h1:font-bold',
   'prose-h1:mb-4',
@@ -63,10 +64,12 @@ const BASE_DOCUMENT_CLASSES = [
   'prose-p:text-gray-700',
   'prose-p:leading-7',
   'prose-p:my-2',
+  'dark:prose-p:text-zinc-300',
   // Lists
   'prose-li:text-gray-700',
   'prose-ul:my-2',
   'prose-ol:my-2',
+  'dark:prose-li:text-zinc-300',
   // Code
   'prose-code:text-red-500',
   'prose-code:bg-gray-100',
@@ -79,18 +82,28 @@ const BASE_DOCUMENT_CLASSES = [
   'prose-pre:text-gray-800',
   'prose-pre:border',
   'prose-pre:border-gray-200',
+  'dark:prose-code:text-rose-300',
+  'dark:prose-code:bg-zinc-800',
+  'dark:prose-pre:bg-zinc-900',
+  'dark:prose-pre:text-zinc-200',
+  'dark:prose-pre:border-zinc-700',
   // Links
   'prose-a:text-gray-600',
   'prose-a:underline',
   'prose-a:decoration-gray-300',
   'hover:prose-a:text-blue-600',
+  'dark:prose-a:text-zinc-300',
+  'dark:prose-a:decoration-zinc-600',
+  'dark:hover:prose-a:text-cyan-300',
   'transition-colors',
   // Blockquote
   'prose-blockquote:border-l-4',
   'prose-blockquote:border-gray-300',
   'prose-blockquote:pl-4',
   'prose-blockquote:italic',
-  'prose-blockquote:text-gray-600'
+  'prose-blockquote:text-gray-600',
+  'dark:prose-blockquote:border-zinc-600',
+  'dark:prose-blockquote:text-zinc-400'
 ].join(' ');
 
 const EDITOR_CONTENT_CLASSES = `${BASE_DOCUMENT_CLASSES} w-full min-h-[calc(100vh-12rem)] px-12 py-8 focus:outline-none focus-visible:outline-none`;
@@ -935,7 +948,7 @@ export default function App() {
           startResizing={startResizing}
         />
       ) : (
-        <aside style={{ width: sidebarWidth }} className="flex-shrink-0 bg-[#F7F7F5] border-r border-[#E9E9E7] flex flex-col">
+        <aside style={{ width: sidebarWidth }} className="flex-shrink-0 bg-[#F7F7F5] border-r border-[#E9E9E7] dark:bg-zinc-900 dark:border-zinc-800 flex flex-col">
           <SidebarSkeleton />
         </aside>
       )}
@@ -991,7 +1004,6 @@ export default function App() {
                 showPanel={false}
               />
             )}
-            <LanguageSwitcher />
             <div className="text-xs text-gray-400 w-20 text-right">{save.errorMessage || t(save.saveMessageKey)}</div>
           </div>
         </header>
@@ -1041,7 +1053,7 @@ export default function App() {
                             <TiptapMarkdownViewer
                               markdown={selectedDoc.description}
                               editorId={`desc-${selectedDoc.rel_path}`}
-                              className="prose prose-slate max-w-none text-lg text-gray-600 leading-relaxed font-light"
+                              className="prose prose-zinc max-w-none text-lg text-gray-600 leading-relaxed font-light"
                               onOpenDocById={openDocByStableId}
                               onOpenIdeaRef={openIdeaRef}
                             />

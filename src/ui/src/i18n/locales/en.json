@@ -252,7 +252,17 @@
     "aiPromptPlaceholder": "Custom prompt for AI reflections...",
     "aiPromptReset": "Reset to default",
     "aiApiKeyPlaceholder": "Enter AI API Key",
-    "aiApiKeyPlaceholderExisting": "Leave empty to keep current, enter new value to replace"
+    "aiApiKeyPlaceholderExisting": "Leave empty to keep current, enter new value to replace",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeHint": "Follow system settings when set to System",
+    "language": "Language",
+    "languageZh": "中文",
+    "languageEn": "English",
+    "languageHint": "Applies immediately across the app"
   },
 
   "search": {
