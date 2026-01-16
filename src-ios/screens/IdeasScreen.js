@@ -22,6 +22,7 @@ const {
 const { Swipeable } = require('react-native-gesture-handler');
 const { useTranslation } = require('react-i18next');
 const ImagePicker = require('expo-image-picker');
+const { Ionicons } = require('@expo/vector-icons');
 const Screen = require('../components/Screen');
 const EmptyState = require('../components/EmptyState');
 const FadeInView = require('../components/FadeInView');
@@ -597,6 +598,7 @@ function IdeasScreen({ navigation }) {
     () => threads.find((thread) => thread.id === replyingThreadId),
     [threads, replyingThreadId],
   );
+  const mainAccessoryId = 'main-accessory';
   const replyAccessoryId = 'reply-accessory';
   const contextEntries = React.useMemo(() => {
     const entries = replyThread?.entries || [];
@@ -613,6 +615,16 @@ function IdeasScreen({ navigation }) {
     },
     [t],
   );
+
+  const handleDismissKeyboard = React.useCallback((target) => {
+    if (target === 'main' && inputRef.current) {
+      inputRef.current.blur();
+    }
+    if (target === 'reply' && replyInputRef.current) {
+      replyInputRef.current.blur();
+    }
+    Keyboard.dismiss();
+  }, []);
 
   return (
     <Screen>
@@ -668,6 +680,7 @@ function IdeasScreen({ navigation }) {
             scrollEnabled={false}
             textAlignVertical="top"
             placeholderTextColor={colors.mutedInk}
+            inputAccessoryViewID={Platform.OS === 'ios' ? mainAccessoryId : undefined}
           />
           {inputImages.length > 0 ? (
             <View style={styles.imageRow}>
@@ -995,17 +1008,37 @@ function IdeasScreen({ navigation }) {
         </Screen>
       </Modal>
       {Platform.OS === 'ios' ? (
-        <InputAccessoryView nativeID={replyAccessoryId}>
-          <View style={styles.replyAccessoryBar}>
-            <Pressable
-              style={styles.imageButton}
-              onPress={() => pickImages('reply')}
-              accessibilityLabel={t('ideas.addImage')}
-            >
-              <ImageIcon />
-            </Pressable>
-          </View>
-        </InputAccessoryView>
+        <>
+          <InputAccessoryView nativeID={mainAccessoryId}>
+            <View style={styles.accessoryBar}>
+              <Pressable
+                style={styles.accessoryDone}
+                onPress={() => handleDismissKeyboard('main')}
+              >
+                <Ionicons name="chevron-down" size={14} color={colors.accent} />
+                <Text style={styles.accessoryDoneText}>{t('common.hideKeyboard')}</Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
+          <InputAccessoryView nativeID={replyAccessoryId}>
+            <View style={styles.replyAccessoryBar}>
+              <Pressable
+                style={styles.imageButton}
+                onPress={() => pickImages('reply')}
+                accessibilityLabel={t('ideas.addImage')}
+              >
+                <ImageIcon />
+              </Pressable>
+              <Pressable
+                style={styles.accessoryDone}
+                onPress={() => handleDismissKeyboard('reply')}
+              >
+                <Ionicons name="chevron-down" size={14} color={colors.accent} />
+                <Text style={styles.accessoryDoneText}>{t('common.hideKeyboard')}</Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
+        </>
       ) : null}
       <Modal
         transparent
@@ -1836,12 +1869,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.sm,
   },
+  accessoryBar: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.paper,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  accessoryDone: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  accessoryDoneText: {
+    fontFamily: typography.subtitle.fontFamily,
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: '600',
+  },
   replyAccessoryBar: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.paper,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   replyRow: {
     flexDirection: 'row',
