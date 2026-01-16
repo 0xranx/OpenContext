@@ -13,6 +13,8 @@ const server = new McpServer({
 });
 
 function toToolResponse(data) {
+  // Wrap arrays in object to comply with MCP structuredContent requirement (must be record, not array)
+  const structured = Array.isArray(data) ? { items: data } : data;
   return {
     content: [
       {
@@ -20,7 +22,7 @@ function toToolResponse(data) {
         text: JSON.stringify(data, null, 2)
       }
     ],
-    structuredContent: data
+    structuredContent: structured
   };
 }
 

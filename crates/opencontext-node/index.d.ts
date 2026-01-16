@@ -78,6 +78,7 @@ export interface SearchOptions {
   limit?: number
   mode?: string
   aggregateBy?: string
+  docType?: string
 }
 /** Load search config */
 export declare function loadSearchConfig(): any
