@@ -188,6 +188,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: desktop-v${{ needs.create-release.outputs.version }}
+          name: OpenContext Desktop v${{ needs.create-release.outputs.version }}
+          generate_release_notes: true
+          draft: true
           files: |
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
 
@@ -196,6 +199,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: desktop-v${{ needs.create-release.outputs.version }}
+          name: OpenContext Desktop v${{ needs.create-release.outputs.version }}
+          generate_release_notes: true
+          draft: true
           files: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
@@ -208,4 +214,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: desktop-v${{ needs.create-release.outputs.version }}
+          name: OpenContext Desktop v${{ needs.create-release.outputs.version }}
+          generate_release_notes: true
           draft: false
