@@ -1097,12 +1097,25 @@ fn main() {
                     MenuItem::with_id(app, "minimize_to_tray", "Minimize to Tray", true, None::<&str>)?;
                 minimize_to_tray_id = Some(minimize_to_tray.id().clone());
 
+                let app_version = app.package_info().version.to_string();
+                let mut about_builder = tauri::menu::AboutMetadataBuilder::new()
+                    .version(Some(app_version.clone()))
+                    .short_version(Some(app_version));
+                let about_icon = Image::from_bytes(include_bytes!("../icons/about-icon.png"))
+                    .ok()
+                    .or_else(|| app.default_window_icon().cloned())
+                    .or_else(|| Image::from_bytes(include_bytes!("../icons/128x128@2x.png")).ok());
+                if let Some(icon) = about_icon {
+                    about_builder = about_builder.icon(Some(icon));
+                }
+                let about_metadata = about_builder.build();
+
                 let app_menu = Submenu::with_items(
                     app,
                     app.package_info().name.clone(),
                     true,
                     &[
-                        &PredefinedMenuItem::about(app, None, None).unwrap(),
+                        &PredefinedMenuItem::about(app, None, Some(about_metadata)).unwrap(),
                         &PredefinedMenuItem::separator(app).unwrap(),
                         &PredefinedMenuItem::services(app, None).unwrap(),
                         &PredefinedMenuItem::separator(app).unwrap(),
