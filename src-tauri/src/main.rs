@@ -8,8 +8,14 @@ use opencontext_core::search::{
 };
 use opencontext_core::{EnvOverrides, OpenContext};
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use tauri::{Emitter, State};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
+use tauri::image::Image;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
+use tauri::{Emitter, Manager, RunEvent, State, WindowEvent};
 use tokio::sync::Mutex as AsyncMutex;
 
 struct AppState {
@@ -26,6 +32,27 @@ type CmdResult<T> = Result<T, String>;
 
 fn map_err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
+}
+
+fn hide_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>) {
+    let _ = window.hide();
+    let _ = window.set_skip_taskbar(true);
+    #[cfg(target_os = "macos")]
+    {
+        let _ = window.app_handle().set_dock_visibility(false);
+    }
+}
+
+fn show_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("main") {
+        #[cfg(target_os = "macos")]
+        {
+            let _ = app.set_dock_visibility(true);
+        }
+        let _ = window.set_skip_taskbar(false);
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
 }
 
 // ===== Folder Commands =====
@@ -1044,7 +1071,11 @@ fn main() {
     let sync_config = search_config.clone();
     let sync_contexts_root = contexts_root.clone();
 
-    tauri::Builder::default()
+    let allow_close = Arc::new(AtomicBool::new(false));
+    let allow_close_for_setup = allow_close.clone();
+    let allow_close_for_run = allow_close.clone();
+
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(AppState {
             ctx: Mutex::new(ctx),
@@ -1054,11 +1085,36 @@ fn main() {
             event_bus,
         })
         .setup(move |app| {
+            let minimize_to_tray_id: Option<tauri::menu::MenuId>;
+
             // Create Edit menu with predefined items for macOS
             // PredefinedMenuItem items automatically trigger native WebView edit actions
             #[cfg(target_os = "macos")]
             {
                 use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
+
+                let minimize_to_tray =
+                    MenuItem::with_id(app, "minimize_to_tray", "Minimize to Tray", true, None::<&str>)?;
+                minimize_to_tray_id = Some(minimize_to_tray.id().clone());
+
+                let app_menu = Submenu::with_items(
+                    app,
+                    app.package_info().name.clone(),
+                    true,
+                    &[
+                        &PredefinedMenuItem::about(app, None, None).unwrap(),
+                        &PredefinedMenuItem::separator(app).unwrap(),
+                        &PredefinedMenuItem::services(app, None).unwrap(),
+                        &PredefinedMenuItem::separator(app).unwrap(),
+                        &PredefinedMenuItem::hide(app, None).unwrap(),
+                        &PredefinedMenuItem::hide_others(app, None).unwrap(),
+                        &PredefinedMenuItem::show_all(app, None).unwrap(),
+                        &PredefinedMenuItem::separator(app).unwrap(),
+                        &minimize_to_tray,
+                        &PredefinedMenuItem::quit(app, None).unwrap(),
+                    ],
+                )
+                .unwrap();
 
                 let edit_menu = Submenu::with_items(
                     app,
@@ -1076,8 +1132,105 @@ fn main() {
                 )
                 .unwrap();
 
-                let menu = Menu::with_items(app, &[&edit_menu]).unwrap();
+                let menu = Menu::with_items(app, &[&app_menu, &edit_menu]).unwrap();
                 app.set_menu(menu).unwrap();
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                minimize_to_tray_id = None;
+            }
+
+            let app_handle = app.handle();
+
+            let tray_show = MenuItem::with_id(
+                app_handle,
+                "tray_show",
+                "Show OpenContext",
+                true,
+                None::<&str>,
+            )?;
+            let tray_quit = MenuItem::with_id(
+                app_handle,
+                "tray_quit",
+                "Quit OpenContext",
+                true,
+                None::<&str>,
+            )?;
+            let tray_menu = Menu::with_items(app_handle, &[&tray_show, &tray_quit])?;
+            let tray_show_id = tray_show.id().clone();
+            let tray_quit_id = tray_quit.id().clone();
+            let tray_app_handle = app_handle.clone();
+            let allow_close_for_menu = allow_close_for_setup.clone();
+            let minimize_to_tray_id = minimize_to_tray_id.clone();
+            let mut tray_builder = TrayIconBuilder::new()
+                .menu(&tray_menu)
+                .tooltip("OpenContext")
+                .show_menu_on_left_click(false)
+                .on_menu_event(move |app, event| {
+                    if event.id == tray_show_id {
+                        show_main_window(app);
+                    } else if event.id == tray_quit_id {
+                        allow_close_for_menu.store(true, Ordering::SeqCst);
+                        app.exit(0);
+                    } else if minimize_to_tray_id
+                        .as_ref()
+                        .map_or(false, |id| event.id == *id)
+                    {
+                        if let Some(window) = app.get_webview_window("main") {
+                            hide_main_window(&window);
+                        }
+                    }
+                });
+
+            #[cfg(target_os = "macos")]
+            {
+                if let Ok(icon) = Image::from_bytes(include_bytes!(
+                    "../icons/tray-icon-template-36.png"
+                )) {
+                    tray_builder = tray_builder.icon(icon);
+                } else if let Ok(icon) = Image::from_bytes(include_bytes!(
+                    "../icons/tray-icon-template-64.png"
+                )) {
+                    tray_builder = tray_builder.icon(icon);
+                } else if let Some(icon) = app.default_window_icon().cloned() {
+                    tray_builder = tray_builder.icon(icon);
+                }
+                tray_builder = tray_builder.icon_as_template(true);
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                if let Some(icon) = app.default_window_icon().cloned() {
+                    tray_builder = tray_builder.icon(icon);
+                } else if let Ok(icon) = Image::from_bytes(include_bytes!("../icons/64x64.png")) {
+                    tray_builder = tray_builder.icon(icon);
+                }
+            }
+
+            tray_builder
+                .on_tray_icon_event(move |_tray, event| match event {
+                    TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        ..
+                    }
+                    | TrayIconEvent::DoubleClick { .. } => {
+                        show_main_window(&tray_app_handle);
+                    }
+                    _ => {}
+                })
+                .build(app_handle)?;
+
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let window_for_event = window.clone();
+                let allow_close_for_window = allow_close_for_setup.clone();
+                window.on_window_event(move |event| {
+                    if let WindowEvent::CloseRequested { api, .. } = event {
+                        if allow_close_for_window.load(Ordering::SeqCst) {
+                            return;
+                        }
+                        api.prevent_close();
+                        hide_main_window(&window_for_event);
+                    }
+                });
             }
 
             // Start index sync service in background
@@ -1123,6 +1276,22 @@ fn main() {
             save_ai_config,
             ai_chat,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(move |app_handle, event| {
+        if let RunEvent::ExitRequested { .. } = event {
+            allow_close_for_run.store(true, Ordering::SeqCst);
+        }
+        #[cfg(target_os = "macos")]
+        if let RunEvent::Reopen {
+            has_visible_windows,
+            ..
+        } = event
+        {
+            if !has_visible_windows {
+                show_main_window(app_handle);
+            }
+        }
+    });
 }
