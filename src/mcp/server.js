@@ -101,7 +101,7 @@ server.registerTool(
     })
   },
   async ({ folder_path, limit }) => {
-    const rows = store.generateManifest({ folderPath: folder_path, limit: limit ?? null });
+    const rows = store.generateManifest({ folderPath: folder_path, limit: limit ?? 10 });
     return toToolResponse(rows);
   }
 );
