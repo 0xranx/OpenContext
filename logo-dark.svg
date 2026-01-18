@@ -1,0 +1,21 @@
+<svg width="640" height="320" viewBox="40 100 560 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad_warm" x1="-100" y1="-100" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="100%" stop-color="#DB2777" />
+    </linearGradient>
+  </defs>
+
+  <!-- Icon 部分：缩小到 0.58 倍，位置居中偏左 -->
+  <g transform="translate(110 160) scale(0.58)">
+    <path d="M-100 -100 H0 V0 H100 V100 H-100 Z" fill="url(#grad_warm)"/>
+    <rect x="20" y="-100" width="80" height="80" fill="#FFFFFF"/>
+    <rect x="45" y="-75" width="30" height="30" fill="#F97316"/>
+  </g>
+  
+  <!-- OpenContext 文字：字号 68px，确保完全显示 -->
+  <g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="68" style="letter-spacing: -0.02em;">
+    <text x="190" y="184" font-weight="500" fill="#D1D5DB">Open</text>
+    <text x="350" y="184" font-weight="700" fill="#FFFFFF">Context</text>
+  </g>
+</svg>
