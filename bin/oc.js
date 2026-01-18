@@ -152,16 +152,147 @@ function openInEditor(filePath) {
   }
 }
 
+const TOOL_LABELS = {
+  cursor: 'Cursor',
+  claude: 'Claude Code',
+  codex: 'Codex'
+};
+const TOOL_ALIASES = {
+  '1': 'cursor',
+  '2': 'claude',
+  '3': 'codex',
+  cursor: 'cursor',
+  claude: 'claude',
+  'claude-code': 'claude',
+  'claude_code': 'claude',
+  codex: 'codex'
+};
+const DEFAULT_TOOL_SELECTION = {
+  cursor: true,
+  claude: true,
+  codex: true
+};
+
+function parseToolSelection(input) {
+  const tokens = String(input || '')
+    .split(/[, ]+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (tokens.length === 0) {
+    return { selection: { ...DEFAULT_TOOL_SELECTION }, unknown: [] };
+  }
+
+  if (tokens.includes('all')) {
+    return { selection: { ...DEFAULT_TOOL_SELECTION }, unknown: [] };
+  }
+
+  if (tokens.includes('none')) {
+    return { selection: { cursor: false, claude: false, codex: false }, unknown: [] };
+  }
+
+  const selection = { cursor: false, claude: false, codex: false };
+  const unknown = [];
+
+  tokens.forEach((token) => {
+    const key = TOOL_ALIASES[token];
+    if (!key) {
+      unknown.push(token);
+      return;
+    }
+    selection[key] = true;
+  });
+
+  return { selection, unknown };
+}
+
+function applyToolFlags(selection, options) {
+  const result = { ...selection };
+  if (options.cursor === false) result.cursor = false;
+  if (options.claude === false) result.claude = false;
+  if (options.codex === false) result.codex = false;
+  return result;
+}
+
+function summarizeSelection(selection) {
+  return Object.keys(TOOL_LABELS)
+    .filter((key) => selection[key])
+    .map((key) => TOOL_LABELS[key]);
+}
+
+async function promptForToolSelection() {
+  const readline = require('readline');
+  const prompt =
+    'Select tools to configure (1=Cursor, 2=Claude Code, 3=Codex; default: all): ';
+  while (true) {
+    const answer = await new Promise((resolve) => {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      rl.question(prompt, (input) => {
+        rl.close();
+        resolve(input);
+      });
+    });
+    if (!String(answer || '').trim()) {
+      return { ...DEFAULT_TOOL_SELECTION };
+    }
+    const parsed = parseToolSelection(answer);
+    if (parsed.unknown.length === 0) {
+      return parsed.selection;
+    }
+    console.log(`Invalid selection: ${parsed.unknown.join(', ')}. Try again.`);
+  }
+}
+
+async function resolveToolSelection(options) {
+  let selection = { ...DEFAULT_TOOL_SELECTION };
+  let hasExplicit = false;
+
+  if (options.tools) {
+    const parsed = parseToolSelection(options.tools);
+    if (parsed.unknown.length > 0) {
+      throw new Error(`Invalid --tools entries: ${parsed.unknown.join(', ')}`);
+    }
+    selection = parsed.selection;
+    hasExplicit = true;
+  }
+
+  if (options.cursor === false || options.claude === false || options.codex === false) {
+    selection = applyToolFlags(selection, options);
+    hasExplicit = true;
+  }
+
+  if (hasExplicit) {
+    return selection;
+  }
+
+  if (!process.stdin.isTTY || process.env.CI) {
+    return selection;
+  }
+
+  return promptForToolSelection();
+}
+
 program
   .command('init')
   .description('Initialize contexts directory and database')
+  .option('--tools <list>', 'Tools to configure (cursor, claude, codex; default: all)')
+  .option('--no-cursor', 'Skip Cursor setup')
+  .option('--no-claude', 'Skip Claude Code setup')
+  .option('--no-codex', 'Skip Codex setup')
   .action(
-    handle(() => {
+    handle(async (options) => {
       const info = store.initEnvironment();
       console.log(`Contexts directory ready at ${info.contextsRoot}`);
       console.log(`Database ready at ${info.dbPath}`);
       const projectRoot = process.cwd();
-      const outputs = syncAgentsArtifacts(projectRoot);
+      const tools = await resolveToolSelection(options);
+      const selected = summarizeSelection(tools);
+      if (selected.length === 0) {
+        console.log('No tool configuration selected; skipping slash commands and MCP config.');
+      } else {
+        console.log(`Tool setup: ${selected.join(', ')}`);
+      }
+      const outputs = syncAgentsArtifacts(projectRoot, { tools });
       if (outputs.length) {
         outputs.forEach((file) => console.log(`Synced instructions: ${file}`));
       }

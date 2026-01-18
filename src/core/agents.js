@@ -1,10 +1,37 @@
 const path = require('path');
+const os = require('os');
 const fs = require('fs');
 const fse = require('fs-extra');
 const { BASE_ROOT, CONTEXTS_ROOT } = require('./store/index.js');
 
 const AGENTS_DIR = path.join(BASE_ROOT, 'agents');
 const GLOBAL_AGENTS_PATH = path.join(AGENTS_DIR, 'AGENTS.md');
+const MCP_SERVER_NAME = 'opencontext';
+const MCP_SERVER_CONFIG = {
+  command: 'oc',
+  args: ['mcp']
+};
+const COMMAND_GUARDRAILS = [
+  'Safety: You may read from `.idea`, but do NOT write inside `.idea`.',
+  'OpenContext docs must live under the global contexts root; never create or edit docs in the project workspace.'
+].join('\n');
+const DEFAULT_TOOL_SELECTION = {
+  cursor: true,
+  claude: true,
+  codex: true
+};
+
+function getClaudeConfigDir() {
+  return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+}
+
+function getCodexConfigDir() {
+  return process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
+}
+
+function getCursorConfigDir() {
+  return path.join(os.homedir(), '.cursor');
+}
 
 function writeFileIfChanged(targetPath, content) {
   if (fs.existsSync(targetPath)) {
@@ -133,6 +160,7 @@ function agentsTemplate() {
     '## Safety boundaries',
     '- Do not auto-run destructive operations (delete/move/rename). Explain and ask for approval first.',
     '- Do not store secrets (tokens/passwords/private data). If needed, store only the process to obtain/configure them (not the values).',
+    '- You may read from `.idea`, but do NOT write inside `.idea`.',
     '',
     'Follow these rules so any agent can use OpenContext reliably and auditably.',
     '<!-- OPENCONTEXT:END -->'
@@ -177,122 +205,260 @@ function projectAgentsTemplate() {
     '<!-- OPENCONTEXT:END -->'
   ].join('\n');
 }
-const CURSOR_WORKFLOWS = [
+const COMMAND_DEFS = [
   {
-    filename: 'opencontext-help.md',
-    content: `--- Cursor Command: opencontext-help.md ---
----
-title: /opencontext-help
-description: Start here — choose the right OpenContext command (beginner-friendly)
----
-
-You are assisting a user who may be new to OpenContext. Your goal is to route them to the right workflow and execute it.
-
-1. Ask the user which of these they want (pick one):
-   - A) "I want to find what I've written before" → use **/opencontext-search**
-   - B) "I want to load background/context for the current task" → use **/opencontext-context**
-   - C) "I want to create a new doc/idea" → use **/opencontext-create**
-   - D) "I want to save/update a doc with what we just learned" → use **/opencontext-iterate**
-2. If they are unsure, default to **/opencontext-context**.
-3. Then run the chosen command and continue the task.
---- End Command ---
-`
+    name: 'opencontext-help',
+    title: '/opencontext-help',
+    description: 'Start here — choose the right OpenContext command (beginner-friendly)',
+    body: [
+      'You are assisting a user who may be new to OpenContext. Your goal is to route them to the right workflow and execute it.',
+      '',
+      '1. Ask the user which of these they want (pick one):',
+      '   - A) "I want to find what I\'ve written before" → use **/opencontext-search**',
+      '   - B) "I want to load background/context for the current task" → use **/opencontext-context**',
+      '   - C) "I want to create a new doc/idea" → use **/opencontext-create**',
+      '   - D) "I want to save/update a doc with what we just learned" → use **/opencontext-iterate**',
+      '2. If they are unsure, default to **/opencontext-context**.',
+      '3. Then run the chosen command and continue the task.'
+    ].join('\n')
   },
   {
-    filename: 'opencontext-context.md',
-    content: `--- Cursor Command: opencontext-context.md ---
----
-title: /opencontext-context
-description: Load relevant OpenContext docs for the current task (safe, no index build)
----
-
-Goal: Load enough context from OpenContext so you can proceed confidently.
-Safety: Do NOT trigger index builds by default (no \`oc index build\`). Prefer manifest + direct reads.
-
-1. If the target space/folder is unclear, run \`oc folder ls --all\` and ask the user to choose a folder (no guessing when ambiguous).
-2. Run \`oc context manifest <folder_path> --limit 10\` (or \`oc context manifest . --limit 10\` for broad context).
-3. Load 3–10 relevant files by \`abs_path\` and extract:
-   - Key constraints, decisions, and current state
-   - Open questions / risks
-4. Cite sources:
-   - Prefer stable links \`oc://doc/<stable_id>\` when available in the manifest output.
-   - Use \`abs_path\` + \`range\` only for line-level evidence.
-5. Summarize the loaded context and proceed with the user’s task.
---- End Command ---
-`
+    name: 'opencontext-context',
+    title: '/opencontext-context',
+    description: 'Load relevant OpenContext docs for the current task (safe, no index build)',
+    body: [
+      'Goal: Load enough context from OpenContext so you can proceed confidently.',
+      'Safety: Do NOT trigger index builds by default (no `oc index build`). Prefer manifest + direct reads.',
+      '',
+      '1. If the target space/folder is unclear, run `oc folder ls --all` and ask the user to choose a folder (no guessing when ambiguous).',
+      '2. Run `oc context manifest <folder_path> --limit 10` (or `oc context manifest . --limit 10` for broad context).',
+      '3. Load 3–10 relevant files by `abs_path` and extract:',
+      '   - Key constraints, decisions, and current state',
+      '   - Open questions / risks',
+      '4. Cite sources:',
+      '   - Prefer stable links `oc://doc/<stable_id>` when available in the manifest output.',
+      '   - Use `abs_path` + `range` only for line-level evidence.',
+      '5. Summarize the loaded context and proceed with the user’s task.'
+    ].join('\n')
   },
   {
-    filename: 'opencontext-search.md',
-    content: `--- Cursor Command: opencontext-search.md ---
----
-title: /opencontext-search
-description: Search OpenContext to find the right docs (safe, no index build by default)
----
-
-Goal: Help the user find relevant existing docs quickly.
-Safety: Do NOT trigger index builds by default (cost may be unpredictable).
-
-1. Ask the user for a short query (or infer one from the conversation).
-2. Try search in read-only mode:
-   - Run: \`oc search \"<query>\" --format json --limit 10\`
-   - If it succeeds, use results to pick candidate docs and then use **/opencontext-context** (manifest + reads) to load and cite them.
-3. If search fails due to missing index:
-   - Fall back to \`oc context manifest <folder> --limit 20\` and use doc \`description\` + filename triage.
-   - Optionally suggest a controlled index build, but do NOT run it unless the user explicitly approves.
-4. Cite sources using stable links \`oc://doc/<stable_id>\` when available.
---- End Command ---
-`
+    name: 'opencontext-search',
+    title: '/opencontext-search',
+    description: 'Search OpenContext to find the right docs (safe, no index build by default)',
+    body: [
+      'Goal: Help the user find relevant existing docs quickly.',
+      'Safety: Do NOT trigger index builds by default (cost may be unpredictable).',
+      '',
+      '1. Ask the user for a short query (or infer one from the conversation).',
+      '2. Try search in read-only mode:',
+      '   - Run: `oc search "<query>" --format json --limit 10`',
+      '   - If it succeeds, use results to pick candidate docs and then use **/opencontext-context** (manifest + reads) to load and cite them.',
+      '3. If search fails due to missing index:',
+      '   - Fall back to `oc context manifest <folder> --limit 20` and use doc `description` + filename triage.',
+      '   - Optionally suggest a controlled index build, but do NOT run it unless the user explicitly approves.',
+      '4. Cite sources using stable links `oc://doc/<stable_id>` when available.'
+    ].join('\n')
   },
   {
-    filename: 'opencontext-create.md',
-    content: `--- Cursor Command: opencontext-create.md ---
----
-title: /opencontext-create
-description: Create a new idea or problem statement inside OpenContext
----
-
-0. **Blocking requirement**: Do NOT answer the user’s broader question until the document has been created and minimally populated.
-1. Infer the target space from recent context; if unclear, ask the user to specify the space (no default).
-2. Derive a concise idea title & summary from the current conversation, then generate a slug (kebab-case; fallback to \`idea-<YYYYMMDDHHmm>\`). Only ask the user if information is insufficient.
-3. Determine the target folder path under OpenContext (do NOT assume fixed subfolders like \`ideas/\`):
-   - If the user gave a target folder, use it.
-   - Otherwise, infer a sensible default and confirm with the user (or ask the user to choose).
-   - If you are unsure what folders exist, run \`oc folder ls --all\` and pick/ask accordingly.
-4. Ensure the target folder exists by running \`oc folder create <folder_path> -d "<folder description>"\` (safe to rerun).
-5. **[CRITICAL - DO NOT SKIP]** You MUST run: \`oc doc create <folder_path> <slug>.md -d "<title>"\` to create the document.
-   - This command registers the document in the OpenContext database.
-   - DO NOT directly create the file with Write tool - you MUST use \`oc doc create\` first.
-   - The command will output the file path after successful creation.
-6. After \`oc doc create\` succeeds, set \`CONTEXTS_ROOT=\${OPENCONTEXT_CONTEXTS_ROOT:-$HOME/.opencontext/contexts}\` and edit \`\${CONTEXTS_ROOT}/<folder_path>/<slug>.md\` directly - do not mirror it inside the project repo.
-7. Populate that file with:
-   - Title / problem statement
-   - Initial description/background
-   - “Related Requests” list (can be empty placeholders)
-8. Return the document path and immediately keep organizing content (no follow-up questions unless critical info is missing).
---- End Command ---
-`
+    name: 'opencontext-create',
+    title: '/opencontext-create',
+    description: 'Create a new idea or problem statement inside OpenContext',
+    body: [
+      '0. **Blocking requirement**: Do NOT answer the user’s broader question until the document has been created and minimally populated.',
+      '1. Infer the target space from recent context; if unclear, ask the user to specify the space (no default).',
+      '2. Derive a concise idea title & summary from the current conversation, then generate a slug (kebab-case; fallback to `idea-<YYYYMMDDHHmm>`). Only ask the user if information is insufficient.',
+      '3. Determine the target folder path under OpenContext (do NOT assume fixed subfolders like `ideas/`):',
+      '   - If the user gave a target folder, use it.',
+      '   - Otherwise, infer a sensible default and confirm with the user (or ask the user to choose).',
+      '   - If you are unsure what folders exist, run `oc folder ls --all` and pick/ask accordingly.',
+      '4. Ensure the target folder exists by running `oc folder create <folder_path> -d "<folder description>"` (safe to rerun).',
+      '5. **[CRITICAL - DO NOT SKIP]** You MUST run: `oc doc create <folder_path> <slug>.md -d "<title>"` to create the document.',
+      '   - This command registers the document in the OpenContext database.',
+      '   - DO NOT directly create the file with Write tool - you MUST use `oc doc create` first.',
+      '   - The command will output the file path after successful creation.',
+      '6. After `oc doc create` succeeds, set `CONTEXTS_ROOT=${OPENCONTEXT_CONTEXTS_ROOT:-$HOME/.opencontext/contexts}` and edit `${CONTEXTS_ROOT}/<folder_path>/<slug>.md` directly - do not mirror it inside the project repo.',
+      '7. Populate that file with:',
+      '   - Title / problem statement',
+      '   - Initial description/background',
+      '   - “Related Requests” list (can be empty placeholders)',
+      '8. Return the document path and immediately keep organizing content (no follow-up questions unless critical info is missing).'
+    ].join('\n')
   },
   {
-    filename: 'opencontext-iterate.md',
-    content: `--- Cursor Command: opencontext-iterate.md ---
----
-title: /opencontext-iterate
-description: Enrich an existing idea with additional context from OpenContext
----
-
-1. Identify the target idea document from the current discussion (ask only if ambiguous). Set \`CONTEXTS_ROOT=\${OPENCONTEXT_CONTEXTS_ROOT:-$HOME/.opencontext/contexts}\` and load \`\${CONTEXTS_ROOT}/<target_doc>\` to understand existing sections (never duplicate it under the project repo).
-2. Derive the owning space from the doc path (e.g., \`<space>/.../foo.md\` → space \`<space>\`). If the space is unclear, run \`oc folder ls --all\`. Then run \`oc context manifest <space> --limit 10\` (or \`oc context manifest . --limit 10\`) and load each \`abs_path\` for inspiration.
-3. Update the Markdown directly in the global file:
-   - Ensure a \`## Iteration Log\` section exists (create if missing).
-   - Append a new entry timestamped with local date/time in readable format (e.g., \`2025-12-11 17:00\` or \`Dec 11, 2025 5:00 PM\`) that summarizes insights, cites referenced docs, and lists next steps/risks.
-   - **Citation rule (DO NOT SKIP)**: when citing any OpenContext doc in \`Iteration Log\`, you MUST use the stable link format \`oc://doc/<stable_id>\` as the primary reference (example: \`[label](oc://doc/<stable_id>)\`). Only add \`abs_path\` and/or \`range\` when you specifically need auditability or line-level evidence. Do NOT cite using only file paths if \`stable_id\` is available in the manifest output.
-   - Refresh any other impacted sections (Overview, Requirements, Implementation notes, etc.).
-4. Save the updated document and call \`oc doc set-desc <target_doc> "<latest summary>"\` so the manifest reflects the newest iteration.
-5. Report the updated doc path plus which references were used.
---- End Command ---
-`
-  },
+    name: 'opencontext-iterate',
+    title: '/opencontext-iterate',
+    description: 'Enrich an existing idea with additional context from OpenContext',
+    body: [
+      '1. Identify the target idea document from the current discussion (ask only if ambiguous). Set `CONTEXTS_ROOT=${OPENCONTEXT_CONTEXTS_ROOT:-$HOME/.opencontext/contexts}` and load `${CONTEXTS_ROOT}/<target_doc>` to understand existing sections (never duplicate it under the project repo).',
+      '2. Derive the owning space from the doc path (e.g., `<space>/.../foo.md` → space `<space>`). If the space is unclear, run `oc folder ls --all`. Then run `oc context manifest <space> --limit 10` (or `oc context manifest . --limit 10`) and load each `abs_path` for inspiration.',
+      '3. Update the Markdown directly in the global file:',
+      '   - Ensure a `## Iteration Log` section exists (create if missing).',
+      '   - Append a new entry timestamped with local date/time in readable format (e.g., `2025-12-11 17:00` or `Dec 11, 2025 5:00 PM`) that summarizes insights, cites referenced docs, and lists next steps/risks.',
+      '   - **Citation rule (DO NOT SKIP)**: when citing any OpenContext doc in `Iteration Log`, you MUST use the stable link format `oc://doc/<stable_id>` as the primary reference (example: `[label](oc://doc/<stable_id>)`). Only add `abs_path` and/or `range` when you specifically need auditability or line-level evidence. Do NOT cite using only file paths if `stable_id` is available in the manifest output.',
+      '   - Refresh any other impacted sections (Overview, Requirements, Implementation notes, etc.).',
+      '4. Save the updated document and call `oc doc set-desc <target_doc> "<latest summary>"` so the manifest reflects the newest iteration.',
+      '5. Report the updated doc path plus which references were used.'
+    ].join('\n')
+  }
 ];
+
+function formatCursorCommand(def) {
+  const body = `${COMMAND_GUARDRAILS}\n\n${def.body.trim()}`;
+  return [
+    `--- Cursor Command: ${def.name}.md ---`,
+    '---',
+    `title: ${def.title}`,
+    `description: ${def.description}`,
+    '---',
+    '',
+    body,
+    '--- End Command ---',
+    ''
+  ].join('\n');
+}
+
+function formatClaudeCommand(def) {
+  const body = `${COMMAND_GUARDRAILS}\n\n${def.body.trim()}`;
+  return [
+    `# ${def.title}`,
+    '',
+    def.description,
+    '',
+    body,
+    ''
+  ].join('\n');
+}
+
+function formatSkill(def) {
+  const body = `${COMMAND_GUARDRAILS}\n\n${def.body.trim()}`;
+  return [
+    '---',
+    `name: ${def.name}`,
+    `description: ${def.description}`,
+    '---',
+    '',
+    `# ${def.title}`,
+    '',
+    body,
+    ''
+  ].join('\n');
+}
+
+function normalizeToolSelection(selection) {
+  if (!selection) {
+    return { ...DEFAULT_TOOL_SELECTION };
+  }
+  return {
+    cursor: selection.cursor === undefined ? DEFAULT_TOOL_SELECTION.cursor : Boolean(selection.cursor),
+    claude: selection.claude === undefined ? DEFAULT_TOOL_SELECTION.claude : Boolean(selection.claude),
+    codex: selection.codex === undefined ? DEFAULT_TOOL_SELECTION.codex : Boolean(selection.codex)
+  };
+}
+
+function normalizeArgs(args) {
+  return Array.isArray(args) ? args : [];
+}
+
+function argsEqual(a, b) {
+  const left = normalizeArgs(a);
+  const right = normalizeArgs(b);
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    if (left[i] !== right[i]) return false;
+  }
+  return true;
+}
+
+function upsertMcpConfig(mcpConfigPath, serverName, serverConfig) {
+  let mcpConfig = { mcpServers: {} };
+  if (fs.existsSync(mcpConfigPath)) {
+    try {
+      mcpConfig = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+    } catch {
+      mcpConfig = { mcpServers: {} };
+    }
+  }
+
+  if (!mcpConfig.mcpServers || typeof mcpConfig.mcpServers !== 'object') {
+    mcpConfig.mcpServers = {};
+  }
+
+  const existing = mcpConfig.mcpServers[serverName];
+  if (existing && existing.command === serverConfig.command && argsEqual(existing.args, serverConfig.args)) {
+    return false;
+  }
+
+  mcpConfig.mcpServers[serverName] = { ...(existing || {}), ...serverConfig };
+  fse.ensureDirSync(path.dirname(mcpConfigPath));
+  fs.writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf8');
+  return true;
+}
+
+function ensureUserCommands(toolsSelection) {
+  const outputs = [];
+  const tools = normalizeToolSelection(toolsSelection);
+  const cursorCommandsDir = tools.cursor ? path.join(getCursorConfigDir(), 'commands') : null;
+  const claudeCommandsDir = tools.claude ? path.join(getClaudeConfigDir(), 'commands') : null;
+
+  COMMAND_DEFS.forEach((def) => {
+    if (cursorCommandsDir) {
+      const cursorPath = path.join(cursorCommandsDir, `${def.name}.md`);
+      if (writeFileIfChanged(cursorPath, formatCursorCommand(def))) {
+        outputs.push(cursorPath);
+      }
+    }
+    if (claudeCommandsDir) {
+      const claudePath = path.join(claudeCommandsDir, `${def.name}.md`);
+      if (writeFileIfChanged(claudePath, formatClaudeCommand(def))) {
+        outputs.push(claudePath);
+      }
+    }
+  });
+  return outputs;
+}
+
+function ensureSkillsAtPath(skillsDir) {
+  const outputs = [];
+  COMMAND_DEFS.forEach((def) => {
+    const skillDir = path.join(skillsDir, def.name);
+    const skillPath = path.join(skillDir, 'SKILL.md');
+    if (writeFileIfChanged(skillPath, formatSkill(def))) {
+      outputs.push(skillPath);
+    }
+  });
+  return outputs;
+}
+
+function ensureUserSkills(toolsSelection) {
+  const outputs = [];
+  const tools = normalizeToolSelection(toolsSelection);
+  if (tools.cursor) {
+    outputs.push(...ensureSkillsAtPath(path.join(getCursorConfigDir(), 'skills')));
+  }
+  if (tools.claude) {
+    outputs.push(...ensureSkillsAtPath(path.join(getClaudeConfigDir(), 'skills')));
+  }
+  if (tools.codex) {
+    outputs.push(...ensureSkillsAtPath(path.join(getCodexConfigDir(), 'skills')));
+  }
+  return outputs;
+}
+
+function ensureUserMcpConfigs(toolsSelection) {
+  const outputs = [];
+  const tools = normalizeToolSelection(toolsSelection);
+  const targets = [];
+  if (tools.cursor) targets.push(path.join(getCursorConfigDir(), 'mcp.json'));
+  if (tools.claude) targets.push(path.join(getClaudeConfigDir(), 'mcp.json'));
+  if (tools.codex) targets.push(path.join(getCodexConfigDir(), 'mcp.json'));
+
+  targets.forEach((mcpConfigPath) => {
+    if (upsertMcpConfig(mcpConfigPath, MCP_SERVER_NAME, MCP_SERVER_CONFIG)) {
+      outputs.push(mcpConfigPath);
+    }
+  });
+  return outputs;
+}
 
 function ensureProjectArtifacts(projectRoot) {
   const outputs = [];
@@ -304,83 +470,15 @@ function ensureProjectArtifacts(projectRoot) {
   if (upsertOpenContextBlockInFile(projectAgentsPath, block)) {
     outputs.push(projectAgentsPath);
   }
-  const cursorDir = path.join(projectRoot, '.cursor');
-  fse.ensureDirSync(cursorDir);
-
-  const commandsDir = path.join(cursorDir, 'commands');
-  fse.ensureDirSync(commandsDir);
-
-  // Clean up deprecated/removed files so they no longer clutter the workspace.
-  // (These files are generated artifacts; safe to remove when the command set changes.)
-  const deprecatedInCursorDir = ['opencontext-manifest.md'];
-  const deprecatedInCommandsDir = [
-    'opencontext-propose.md',
-    'opencontext-merge.md',
-    'opencontext-archive.md',
-    'opencontext-implement.md',
-    'opencontext-refer.md',
-  ];
-
-  deprecatedInCursorDir.forEach((name) => {
-    const p = path.join(cursorDir, name);
-    try {
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    } catch {
-      // ignore cleanup errors
-    }
-  });
-  deprecatedInCommandsDir.forEach((name) => {
-    const p = path.join(commandsDir, name);
-    try {
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    } catch {
-      // ignore cleanup errors
-    }
-  });
-
-  CURSOR_WORKFLOWS.forEach((workflow) => {
-    const filePath = path.join(commandsDir, workflow.filename);
-    if (writeFileIfChanged(filePath, workflow.content)) {
-      outputs.push(filePath);
-    }
-  });
-
-  // Generate MCP configuration for Cursor
-  const mcpConfigPath = path.join(cursorDir, 'mcp.json');
-  const ocMcpConfig = {
-    command: 'oc',
-    args: ['mcp']
-  };
-  
-  let mcpConfig = { mcpServers: {} };
-  if (fs.existsSync(mcpConfigPath)) {
-    try {
-      const existing = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
-      mcpConfig = existing;
-      if (!mcpConfig.mcpServers) {
-        mcpConfig.mcpServers = {};
-      }
-    } catch {
-      // If parse fails, start fresh
-      mcpConfig = { mcpServers: {} };
-    }
-  }
-  
-  // Only update if opencontext config is missing or different
-  const existingOc = mcpConfig.mcpServers.opencontext;
-  if (!existingOc || existingOc.command !== ocMcpConfig.command || 
-      JSON.stringify(existingOc.args) !== JSON.stringify(ocMcpConfig.args)) {
-    mcpConfig.mcpServers.opencontext = ocMcpConfig;
-    fs.writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf8');
-    outputs.push(mcpConfigPath);
-  }
-
   return outputs;
 }
 
-function syncAgentsArtifacts(projectRoot) {
+function syncAgentsArtifacts(projectRoot, options = {}) {
   const outputs = [];
   outputs.push(...ensureGlobalArtifacts());
+  outputs.push(...ensureUserCommands(options.tools));
+  outputs.push(...ensureUserSkills(options.tools));
+  outputs.push(...ensureUserMcpConfigs(options.tools));
   outputs.push(...ensureProjectArtifacts(projectRoot));
   return outputs;
 }
@@ -389,4 +487,3 @@ module.exports = {
   syncAgentsArtifacts,
   GLOBAL_AGENTS_PATH
 };
-

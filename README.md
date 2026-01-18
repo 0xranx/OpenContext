@@ -35,7 +35,7 @@ When you use an AI assistant to build things, **context gets lost** (across days
 
 ## The Solution
 
-OpenContext is a lightweight **personal context / knowledge store** for AI assistants (Agents) and Cursor users. Write down important project context as documents, and let your assistant "load history first, then act; ship, then persist".
+OpenContext is a lightweight **personal context / knowledge store** for AI assistants (Agents) and coding tools like Cursor / Claude Code / Codex. Write down important project context as documents, and let your assistant "load history first, then act; ship, then persist".
 
 | Before OpenContext | After OpenContext |
 |-------------------|-------------------|
@@ -46,7 +46,7 @@ OpenContext is a lightweight **personal context / knowledge store** for AI assis
 ## What's Included
 
 - **`oc` CLI** — manage a global `contexts/` library (folders/docs, manifests, search)
-- **MCP Server** — so Cursor/Agents can call OpenContext as tools
+- **MCP Server** — so Cursor/Claude Code/Codex/Agents can call OpenContext as tools
 - **Desktop App** — manage/search/edit contexts with a native UI
 - **Web UI** — browse/edit contexts locally (no install required)
 
@@ -63,24 +63,38 @@ npm install -g @aicontextlab/cli
 | Path | Best For | Get Started |
 |------|----------|-------------|
 | 🖥️ **Desktop App** | Visual users who want a native UI | [Download from Releases](https://github.com/0xranx/OpenContext/releases) |
-| ⌨️ **CLI + Cursor** | Developers using Cursor/AI agents | `npm install -g @aicontextlab/cli && oc init` |
+| ⌨️ **CLI + Tools** | Developers using Cursor/Claude Code/Codex/AI agents | `npm install -g @aicontextlab/cli && oc init` |
 | 🔧 **CLI Only** | Power users, automation | `npm install -g @aicontextlab/cli` |
 
-### 30-Second Setup (CLI + Cursor)
+### 30-Second Setup (CLI + Cursor/Claude Code/Codex)
 
 ```bash
 # 1. Install
 npm install -g @aicontextlab/cli
 
-# 2. Initialize in your project
+# 2. Initialize (prompts for tool setup; defaults to all)
 cd your-project
 oc init
 
-# 3. Use slash commands in Cursor
+# 3. Use slash commands (Cursor + Claude Code)
 #    /opencontext-context  — load background before working
 #    /opencontext-search   — find relevant docs
 #    /opencontext-create   — create a new doc
 #    /opencontext-iterate  — persist what you learned
+#    Tip: non-interactive installs can use --tools cursor,claude,codex or --no-claude/--no-cursor/--no-codex
+#
+#    Installed by oc init:
+#    - Cursor: ~/.cursor/commands
+#    - Claude Code: ~/.claude/commands (or $CLAUDE_CONFIG_DIR/commands)
+#    Skills (wrapped from slash commands):
+#    - Cursor: ~/.cursor/skills/opencontext-*/SKILL.md
+#    - Claude Code: ~/.claude/skills/opencontext-*/SKILL.md (or $CLAUDE_CONFIG_DIR/skills)
+#    - Codex: ~/.codex/skills/opencontext-*/SKILL.md (or $CODEX_HOME/skills)
+#
+# 4. MCP config is user-level (Cursor/Claude/Codex)
+#    - Cursor: ~/.cursor/mcp.json
+#    - Claude Code: ~/.claude/mcp.json (or $CLAUDE_CONFIG_DIR/mcp.json)
+#    - Codex: ~/.codex/mcp.json (or $CODEX_HOME/mcp.json)
 ```
 
 > 📖 **For detailed usage guide, search configuration, and FAQ, visit the [Website](https://0xranx.github.io/OpenContext/en/usage/).**
@@ -93,14 +107,14 @@ Run `oc <cmd> --help` for details.
 
 | Command | What it does |
 |---------|--------------|
-| `oc init` | Initialize OpenContext in your project |
+| `oc init` | Initialize OpenContext + user-level tool integrations |
 | `oc folder ls` | List folders |
 | `oc folder create <path> -d "desc"` | Create a folder |
 | `oc doc create <folder> <name>.md -d "desc"` | Create a document |
 | `oc doc ls <folder>` | List documents |
 | `oc context manifest <folder>` | Generate file list for AI to read |
 | `oc search "query"` | Search documents |
-| `oc mcp` | Start MCP server for Cursor |
+| `oc mcp` | Start MCP server for MCP clients |
 | `oc ui` | Start local Web UI |
 
 > 📖 **Full command reference available on the [Website](https://0xranx.github.io/OpenContext/en/usage/).**
@@ -128,4 +142,3 @@ npm run ui:build     # production build
 ## License
 
 MIT © [OpenContext](https://github.com/0xranx/OpenContext)
-
