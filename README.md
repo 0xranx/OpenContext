@@ -37,6 +37,8 @@ When you use an AI assistant to build things, **context gets lost** (across days
 
 OpenContext is a lightweight **personal context / knowledge store** for AI assistants (Agents) and coding tools like Cursor / Claude Code / Codex. Write down important project context as documents, and let your assistant "load history first, then act; ship, then persist".
 
+**Skills-first support:** `oc init` generates user-level skills (Cursor/Claude Code/Codex) plus slash commands (Cursor/Claude Code), so agents can load, search, create, and iterate your context with one command.
+
 | Before OpenContext | After OpenContext |
 |-------------------|-------------------|
 | 📂 Hard to share context across repos/sessions | ✅ Global context library works across all projects |
@@ -91,7 +93,7 @@ oc init
 #    - Claude Code: ~/.claude/skills/opencontext-*/SKILL.md (or $CLAUDE_CONFIG_DIR/skills)
 #    - Codex: ~/.codex/skills/opencontext-*/SKILL.md (or $CODEX_HOME/skills)
 #
-# 4. MCP config is user-level (Cursor/Claude/Codex)
+# 4. MCP config is user-level (Cursor/Claude Code/Codex)
 #    - Cursor: ~/.cursor/mcp.json
 #    - Claude Code: ~/.claude/mcp.json (or $CLAUDE_CONFIG_DIR/mcp.json)
 #    - Codex: ~/.codex/mcp.json (or $CODEX_HOME/mcp.json)

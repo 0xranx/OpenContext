@@ -35,7 +35,9 @@
 
 ## 解决方案
 
-OpenContext 是一个面向 AI 助手（Agent）与 Cursor 用户的「个人上下文/知识库」。把重要的背景、决策、规范沉淀成文档，让 AI 助手能「先读历史再动手、做完再沉淀」。
+OpenContext 是一个面向 AI 助手（Agent）与 Cursor / Claude Code / Codex 等编码工具用户的「个人上下文/知识库」。把重要的背景、决策、规范沉淀成文档，让 AI 助手能「先读历史再动手、做完再沉淀」。
+
+**Skills 优先支持：** `oc init` 会生成用户级 skills（Cursor/Claude Code/Codex）和斜杠命令（Cursor/Claude Code），让 Agent 用一条命令完成加载、搜索、创建与迭代。
 
 | 使用前 | 使用后 |
 |-------|-------|
@@ -46,7 +48,7 @@ OpenContext 是一个面向 AI 助手（Agent）与 Cursor 用户的「个人上
 ## 包含什么
 
 - **`oc` CLI** — 管理全局 `contexts/` 文档库（目录/文档、清单、检索）
-- **MCP Server** — 让 Cursor/Agent 通过工具调用 OpenContext
+- **MCP Server** — 让 Cursor/Claude Code/Codex/Agent 通过工具调用 OpenContext
 - **桌面版应用** — 用原生 UI 管理/搜索/编辑 contexts
 - **Web UI** — 本地浏览/编辑文档（无需安装桌面版）
 
@@ -63,24 +65,38 @@ npm install -g @aicontextlab/cli
 | 路径 | 适合人群 | 开始使用 |
 |-----|---------|---------|
 | 🖥️ **桌面版应用** | 喜欢图形界面的用户 | [从 Releases 下载](https://github.com/0xranx/OpenContext/releases) |
-| ⌨️ **CLI + Cursor** | 使用 Cursor/AI Agent 的开发者 | `npm install -g @aicontextlab/cli && oc init` |
+| ⌨️ **CLI + 工具接入** | 使用 Cursor/Claude Code/Codex/AI Agent 的开发者 | `npm install -g @aicontextlab/cli && oc init` |
 | 🔧 **仅 CLI** | 高级用户、自动化场景 | `npm install -g @aicontextlab/cli` |
 
-### 30 秒上手（CLI + Cursor）
+### 30 秒上手（CLI + Cursor/Claude Code/Codex）
 
 ```bash
 # 1. 安装
 npm install -g @aicontextlab/cli
 
-# 2. 在你的项目中初始化
+# 2. 初始化（会提示选择工具，默认全选）
 cd your-project
 oc init
 
-# 3. 在 Cursor 中使用斜杠命令
+# 3. 在 Cursor / Claude Code 中使用斜杠命令
 #    /opencontext-context  — 开始工作前加载背景
 #    /opencontext-search   — 查找相关文档
 #    /opencontext-create   — 创建新文档
 #    /opencontext-iterate  — 沉淀学到的内容
+#    提示：非交互可用 --tools cursor,claude,codex 或 --no-claude/--no-cursor/--no-codex
+#
+#    oc init 会安装：
+#    - Cursor: ~/.cursor/commands
+#    - Claude Code: ~/.claude/commands（或 $CLAUDE_CONFIG_DIR/commands）
+#    Skills（斜杠命令的同名封装）：
+#    - Cursor: ~/.cursor/skills/opencontext-*/SKILL.md
+#    - Claude Code: ~/.claude/skills/opencontext-*/SKILL.md（或 $CLAUDE_CONFIG_DIR/skills）
+#    - Codex: ~/.codex/skills/opencontext-*/SKILL.md（或 $CODEX_HOME/skills）
+#
+#    用户级 MCP 配置：
+#    - Cursor: ~/.cursor/mcp.json
+#    - Claude Code: ~/.claude/mcp.json（或 $CLAUDE_CONFIG_DIR/mcp.json）
+#    - Codex: ~/.codex/mcp.json（或 $CODEX_HOME/mcp.json）
 ```
 
 > 📖 **详细使用指南、搜索配置和常见问题，请访问[官网](https://0xranx.github.io/OpenContext/zh/usage/)。**
@@ -93,14 +109,14 @@ oc init
 
 | 命令 | 说明 |
 |-----|------|
-| `oc init` | 在项目中初始化 OpenContext |
+| `oc init` | 初始化 OpenContext + 用户级工具集成 |
 | `oc folder ls` | 列出目录 |
 | `oc folder create <path> -d "desc"` | 创建目录 |
 | `oc doc create <folder> <name>.md -d "desc"` | 创建文档 |
 | `oc doc ls <folder>` | 列出文档 |
 | `oc context manifest <folder>` | 生成文档清单供 AI 读取 |
 | `oc search "query"` | 搜索文档 |
-| `oc mcp` | 启动 MCP Server（给 Cursor 用） |
+| `oc mcp` | 启动 MCP Server（给 MCP 客户端用） |
 | `oc ui` | 启动本地 Web UI |
 
 > 📖 **完整命令参考请访问[官网](https://0xranx.github.io/OpenContext/zh/usage/)。**
