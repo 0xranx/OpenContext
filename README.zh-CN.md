@@ -49,6 +49,7 @@ OpenContext 是一个面向 AI 助手（Agent）与 Cursor / Claude Code / Codex
 
 - **`oc` CLI** — 管理全局 `contexts/` 文档库（目录/文档、清单、检索）
 - **MCP Server** — 让 Cursor/Claude Code/Codex/Agent 通过工具调用 OpenContext
+- **Skills + 斜杠命令** — 为 Cursor/Claude Code/Codex 生成用户级 skills，为 Cursor/Claude Code 生成斜杠命令（由 `oc init` 生成）
 - **桌面版应用** — 用原生 UI 管理/搜索/编辑 contexts
 - **Web UI** — 本地浏览/编辑文档（无需安装桌面版）
 
