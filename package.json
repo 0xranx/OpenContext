@@ -129,6 +129,8 @@
     "remark-toc": "^9.0.0",
     "tiptap-markdown": "^0.9.0",
     "vectra": "^0.11.1",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {

@@ -166,6 +166,16 @@ body {
 
 /* --- Tiptap Editor Styles --- */
 
+/* Force word wrap in viewers (agent sidebar etc) */
+.tiptap-viewer {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.tiptap-viewer * {
+  max-width: 100%;
+}
+
 /* Editor placeholder */
 .tiptap-editor.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -416,8 +426,23 @@ body {
 
 /* Inline code */
 .tiptap-editor code:not(pre code),
-.tiptap-viewer code:not(pre code) {
-  @apply px-1.5 py-0.5 rounded bg-gray-100 text-red-600 text-sm font-mono;
+.tiptap-viewer code:not(pre code),
+.prose code:not(pre code) {
+  @apply px-1 py-0.5 rounded bg-gray-100 text-red-600 font-mono;
+  font-size: inherit !important;
+  word-break: break-all;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Remove Tailwind Typography's backtick pseudo-elements from inline code */
+.tiptap-editor code:not(pre code)::before,
+.tiptap-editor code:not(pre code)::after,
+.tiptap-viewer code:not(pre code)::before,
+.tiptap-viewer code:not(pre code)::after,
+.prose code::before,
+.prose code::after {
+  content: '' !important;
 }
 
 .dark .tiptap-editor pre,
@@ -433,7 +458,8 @@ body {
 }
 
 .dark .tiptap-editor code:not(pre code),
-.dark .tiptap-viewer code:not(pre code) {
+.dark .tiptap-viewer code:not(pre code),
+.dark .prose code:not(pre code) {
   @apply bg-zinc-800 text-rose-300;
 }
 
@@ -445,6 +471,8 @@ body {
   color: #2563eb;
   text-decoration: underline;
   cursor: pointer;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .tiptap-editor a:hover,
@@ -608,4 +636,18 @@ body {
 
 .slide-in-from-top-2 {
   animation-name: slide-in-from-top-2;
+}
+
+.xterm {
+  height: 100%;
+}
+
+.xterm .xterm-viewport,
+.xterm .xterm-screen {
+  height: 100% !important;
+}
+
+.xterm {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
 }

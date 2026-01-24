@@ -10,7 +10,8 @@ import {
   PencilIcon,
   FolderPlusIcon,
   DocumentPlusIcon,
-  ClipboardDocumentIcon
+  ClipboardDocumentIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 // Tiptap Editor (migrated from PlateJS)
 import { TiptapMarkdownEditor, TiptapMarkdownViewer } from './components/TiptapMarkdown';
@@ -28,6 +29,7 @@ import { useScrollSpy } from './hooks/useScrollSpy';
 import { useTauriDrag } from './hooks/useTauriDrag.jsx';
 import { PageSkeleton, SidebarSkeleton } from './components/Skeletons';
 import IdeaTimeline from './components/IdeaTimeline';
+import AgentSidebar from './components/agent/AgentSidebar';
 import * as api from './api';
 import { writeClipboardText } from './utils/clipboard';
 import {
@@ -217,11 +219,14 @@ export default function App() {
   const [save, dispatchSave] = useReducer(saveReducer, saveInitialState);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [terminalWidth, setTerminalWidth] = useState(450);
+  const [isResizingTerminal, setIsResizingTerminal] = useState(false);
   const [ideaFocusEntryId, setIdeaFocusEntryId] = useState(null);
   // activeTocId is computed by useScrollSpy
 
   // UI States
   const [contextMenu, setContextMenu] = useState(null); // { x, y, target }
+  const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   // dialog state replaces modal state
   const [dialog, setDialog] = useState(null); // { isOpen, type, title, message, placeholder, initialValue, confirmText, cancelText, isDestructive, kind, payload }
   // Search modal state
@@ -397,6 +402,15 @@ export default function App() {
   const stopResizing = useCallback(() => { setIsResizingSidebar(false); }, []);
   const resize = useCallback((e) => { if (isResizingSidebar) { const w = e.clientX; if (w > 160 && w < 600) setSidebarWidth(w); } }, [isResizingSidebar]);
   useEffect(() => { window.addEventListener('mousemove', resize); window.addEventListener('mouseup', stopResizing); return () => { window.removeEventListener('mousemove', resize); window.removeEventListener('mouseup', stopResizing); }; }, [resize, stopResizing]);
+
+  const startResizingTerminal = useCallback((e) => { e.preventDefault(); setIsResizingTerminal(true); }, []);
+  const stopResizingTerminal = useCallback(() => { setIsResizingTerminal(false); }, []);
+  const resizeTerminal = useCallback((e) => {
+    if (!isResizingTerminal) return;
+    const w = window.innerWidth - e.clientX;
+    if (w > 240 && w < 800) setTerminalWidth(w);
+  }, [isResizingTerminal]);
+  useEffect(() => { window.addEventListener('mousemove', resizeTerminal); window.addEventListener('mouseup', stopResizingTerminal); return () => { window.removeEventListener('mousemove', resizeTerminal); window.removeEventListener('mouseup', stopResizingTerminal); }; }, [resizeTerminal, stopResizingTerminal]);
 
   // --- CRUD Handlers ---
 
@@ -909,7 +923,7 @@ export default function App() {
   useEffect(() => { if (!selectedDoc || !save.hasPendingChanges || isHydratingContentRef.current) return; if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = setTimeout(() => saveDocument('auto'), AUTO_SAVE_DELAY); return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); }; }, [selectedDoc, docContent, save.hasPendingChanges]);
 
   return (
-    <div className={`flex h-screen bg-white text-gray-900 font-sans ${isResizingSidebar ? 'cursor-col-resize select-none' : ''}`} onClick={() => setContextMenu(null)}>
+    <div className={`flex h-screen bg-white text-gray-900 font-sans ${(isResizingSidebar || isResizingTerminal) ? 'cursor-col-resize select-none' : ''}`} onClick={() => setContextMenu(null)}>
       {foldersLoaded ? (
         <SidebarTree
           folders={folders}
@@ -980,38 +994,50 @@ export default function App() {
             onRefresh={ideaLoader.refresh}
           />
         ) : (
-          <>
-        <header 
-          className="h-12 flex items-center justify-between px-4 notion-header transition-all select-none relative z-10"
-        >
-          <div 
-            className="flex items-center gap-2 overflow-hidden flex-1 mr-4"
-            {...dragProps}
-          >
-            {/* Breadcrumbs - stop propagation to allow clicking */}
-            <div onMouseDown={(e) => e.stopPropagation()}>
-              <Breadcrumbs selectedDoc={selectedDoc} saveState={save.saveState} />
-            </div>
-          </div>
-          <div className="flex items-center gap-4 flex-shrink-0">
-            {selectedDoc && toc.length > 0 && (
-              <Toc
-                toc={toc}
-                isOpen={isTocOpen}
-                activeId={activeTocId}
-                onToggle={() => setIsTocOpen(!isTocOpen)}
-                onSelectHeading={scrollToTocHeading}
-                showPanel={false}
-              />
-            )}
-            <div className="text-xs text-gray-400 w-20 text-right">{save.errorMessage || t(save.saveMessageKey)}</div>
-          </div>
-        </header>
-        <div className="flex-1 overflow-hidden relative flex">
-          {error && <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-50 text-red-600 px-4 py-2 rounded-md shadow-sm border border-red-100 z-50 text-sm">{error}</div>}
-          {isLoadingContent || !foldersLoaded ? <PageSkeleton /> : selectedDoc ? (
-            <div ref={editorScrollRef} className="flex-1 overflow-y-auto scrollbar-thin">
-               <div className="max-w-[900px] mx-auto pb-32">
+          <div className="flex-1 flex flex-row overflow-hidden relative">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 relative bg-white dark:bg-zinc-900">
+              <header 
+                className="h-12 flex items-center justify-between px-4 notion-header transition-all select-none relative z-10 flex-shrink-0"
+              >
+                <div 
+                  className="flex items-center gap-2 overflow-hidden flex-1 mr-4"
+                  {...dragProps}
+                >
+                  {/* Breadcrumbs - stop propagation to allow clicking */}
+                  <div onMouseDown={(e) => e.stopPropagation()}>
+                    <Breadcrumbs selectedDoc={selectedDoc} saveState={save.saveState} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  {selectedDoc && toc.length > 0 && (
+                    <Toc
+                      toc={toc}
+                      isOpen={isTocOpen}
+                      activeId={activeTocId}
+                      onToggle={() => setIsTocOpen(!isTocOpen)}
+                      onSelectHeading={scrollToTocHeading}
+                      showPanel={false}
+                    />
+                  )}
+                  <div className="text-xs text-gray-400 w-20 text-right">{save.errorMessage || t(save.saveMessageKey)}</div>
+                  <button
+                    type="button"
+                    className={`p-1.5 rounded-md transition-colors ${isTerminalOpen ? 'bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100' : 'text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100'}`}
+                    onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+                    title={t('common.toggleTerminal', 'Toggle Agent Panel')}
+                  >
+                    <SparklesIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </header>
+          
+              {/* Content + TOC Wrapper - always stays together */}
+              <div className="flex-1 flex flex-row min-h-0 min-w-0 relative">
+                {error && <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-50 text-red-600 px-4 py-2 rounded-md shadow-sm border border-red-100 z-50 text-sm">{error}</div>}
+                {isLoadingContent || !foldersLoaded ? <PageSkeleton /> : selectedDoc ? (
+                  <div className="flex-1 relative min-h-0 min-w-0">
+                  <div ref={editorScrollRef} className="absolute inset-0 overflow-y-auto scrollbar-thin">
+                     <div className="max-w-[900px] mx-auto pb-32">
                  <div className="pt-8 px-12 group">
                     {spaceNewDocs && spaceNewDocs.space === currentSpace && (
                       <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 flex items-center gap-3">
@@ -1095,6 +1121,7 @@ export default function App() {
                  />
                 </div>
             </div>
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400 select-none">
               <div className="w-16 h-16 mb-6 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center shadow-sm">
@@ -1123,7 +1150,33 @@ export default function App() {
             />
           )}
           </div>
-          </>
+          </div>
+
+          {/* Agent Sidebar (Persistent) */}
+          <div 
+            className={`${isTerminalOpen ? 'flex' : 'hidden'} relative z-20 flex-shrink-0 bg-white dark:bg-zinc-900 ${
+              isResizingTerminal ? '' : 'transition-[background-color] duration-200'
+            } flex-row h-full border-l border-zinc-200 dark:border-zinc-800`}
+            style={{
+              width: terminalWidth,
+              height: '100%',
+            }}
+          >
+            {/* Resize Handle */}
+            <div
+              className="transition-colors active:bg-blue-600/50 hover:bg-blue-500/50 dark:hover:bg-blue-400/50 z-30 w-1.5 h-full cursor-col-resize absolute left-0 top-0 bottom-0 -translate-x-1/2"
+              onMouseDown={startResizingTerminal}
+              title="Drag to resize"
+            />
+            
+            <AgentSidebar
+              width="100%"
+              height="100%"
+              orientation="vertical"
+              selectedDoc={selectedDoc}
+            />
+          </div>
+        </div>
         )}
       </main>
 

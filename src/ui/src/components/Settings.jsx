@@ -9,11 +9,13 @@ import {
   CheckIcon,
   PencilIcon,
   SparklesIcon,
+  CommandLineIcon,
   MoonIcon,
   SunIcon,
   ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 import * as api from '../api';
+import { DEFAULT_CODEX_MODELS, mergeModelDefaults } from './agent/constants';
 import { useAI } from '../context/AIContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -48,6 +50,13 @@ export function Settings() {
     prompt: '',
   });
   const [savingAI, setSavingAI] = useState(false);
+  const [agentModelConfig, setAgentModelConfig] = useState({
+    codex: DEFAULT_CODEX_MODELS,
+    claude: [],
+  });
+  const [agentModelEditForm, setAgentModelEditForm] = useState({ codex: '', claude: '' });
+  const [isEditingAgentModels, setIsEditingAgentModels] = useState(false);
+  const [savingAgentModels, setSavingAgentModels] = useState(false);
 
   // Load initial data and setup Tauri event listener
   useEffect(() => {
@@ -74,12 +83,30 @@ export function Settings() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [env, idx] = await Promise.all([
+      const [env, idx, agentModels] = await Promise.all([
         api.getEnvInfo().catch(() => null),
-        api.getIndexStatus().catch(() => null)
+        api.getIndexStatus().catch(() => null),
+        api.getAgentModelConfig().catch(() => null)
       ]);
       setEnvInfo(env);
       setIndexStatus(idx);
+      if (agentModels) {
+        const codex = Array.isArray(agentModels.codex) && agentModels.codex.length
+          ? mergeModelDefaults(agentModels.codex, DEFAULT_CODEX_MODELS)
+          : DEFAULT_CODEX_MODELS;
+        const claude = Array.isArray(agentModels.claude) ? agentModels.claude : [];
+        setAgentModelConfig({ codex, claude });
+        setAgentModelEditForm({
+          codex: codex.join('\n'),
+          claude: claude.join('\n'),
+        });
+      } else {
+        setAgentModelConfig({ codex: DEFAULT_CODEX_MODELS, claude: [] });
+        setAgentModelEditForm({
+          codex: DEFAULT_CODEX_MODELS.join('\n'),
+          claude: '',
+        });
+      }
       
       // Initialize edit form with current values
       if (env) {
@@ -108,6 +135,44 @@ export function Settings() {
       });
     }
   }, [aiConfig]);
+
+  const normalizeModelLines = (value) =>
+    String(value || '')
+      .split(/\n|,/g)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const handleStartEditAgentModels = useCallback(() => {
+    setIsEditingAgentModels(true);
+  }, []);
+
+  const handleCancelEditAgentModels = useCallback(() => {
+    setIsEditingAgentModels(false);
+    setAgentModelEditForm({
+      codex: agentModelConfig.codex.join('\n'),
+      claude: agentModelConfig.claude.join('\n'),
+    });
+  }, [agentModelConfig]);
+
+  const handleSaveAgentModels = async () => {
+    setSavingAgentModels(true);
+    try {
+      const payload = {
+        codex: normalizeModelLines(agentModelEditForm.codex),
+        claude: normalizeModelLines(agentModelEditForm.claude),
+      };
+      await api.saveAgentModelConfig(payload);
+      setAgentModelConfig(payload);
+      setIsEditingAgentModels(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('agent-models-updated', { detail: payload }));
+      }
+    } catch (err) {
+      console.error('Failed to save agent model config:', err);
+    } finally {
+      setSavingAgentModels(false);
+    }
+  };
 
   const handleStartEdit = useCallback(() => {
     setIsEditing(true);
@@ -529,6 +594,97 @@ export function Settings() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Agent CLI Models */}
+      <section className="mb-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-200 flex items-center gap-2">
+            <CommandLineIcon className="w-5 h-5" />
+            {t('settings.agentCliModels')}
+          </h2>
+          {!isEditingAgentModels ? (
+            <button
+              onClick={handleStartEditAgentModels}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
+            >
+              <PencilIcon className="w-4 h-4" />
+              {t('settings.edit')}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCancelEditAgentModels}
+                className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={handleSaveAgentModels}
+                disabled={savingAgentModels}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-gray-900 hover:bg-black rounded-md transition-colors disabled:opacity-50 shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              >
+                {savingAgentModels ? (
+                  <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckIcon className="w-4 h-4" />
+                )}
+                {t('common.save')}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-gray-50 dark:bg-zinc-900/50 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
+          <div className="px-6 py-4 border-b border-gray-200/60 dark:border-zinc-800 grid grid-cols-3 gap-4">
+            <div className="text-sm font-medium text-gray-500 dark:text-zinc-400 pt-1.5">
+              {t('settings.agentCliModelsCodex')}
+            </div>
+            <div className="col-span-2">
+              {isEditingAgentModels ? (
+                <textarea
+                  value={agentModelEditForm.codex}
+                  onChange={(e) => setAgentModelEditForm((f) => ({ ...f, codex: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-zinc-700 focus:border-gray-400 dark:focus:border-zinc-600 transition-all resize-y min-h-[80px] dark:text-zinc-200"
+                  placeholder={t('settings.agentCliModelsPlaceholder')}
+                  rows={3}
+                />
+              ) : (
+                <div className="text-sm text-gray-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                  {agentModelConfig.codex.length
+                    ? agentModelConfig.codex.join('\n')
+                    : t('settings.notConfigured')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="px-6 py-4 grid grid-cols-3 gap-4">
+            <div className="text-sm font-medium text-gray-500 dark:text-zinc-400 pt-1.5">
+              {t('settings.agentCliModelsClaude')}
+            </div>
+            <div className="col-span-2">
+              {isEditingAgentModels ? (
+                <textarea
+                  value={agentModelEditForm.claude}
+                  onChange={(e) => setAgentModelEditForm((f) => ({ ...f, claude: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-zinc-700 focus:border-gray-400 dark:focus:border-zinc-600 transition-all resize-y min-h-[80px] dark:text-zinc-200"
+                  placeholder={t('settings.agentCliModelsPlaceholder')}
+                  rows={3}
+                />
+              ) : (
+                <div className="text-sm text-gray-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                  {agentModelConfig.claude.length
+                    ? agentModelConfig.claude.join('\n')
+                    : t('settings.notConfigured')}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="px-6 pb-4 text-xs text-gray-400 dark:text-zinc-500">
+            {t('settings.agentCliModelsHint')}
           </div>
         </div>
       </section>

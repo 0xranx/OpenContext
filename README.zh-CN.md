@@ -10,6 +10,13 @@
     不再重复解释，专注高效构建。
   </p>
 
+  <p>
+    <strong>复用你已有的 coding agent。</strong> OpenContext 直接接入你现有的 CLI（Codex/Claude/OpenCode），并提供 GUI + 内置 Skills/工具，无需额外为另一套 Agent 付费。
+  </p>
+
+  <!-- Overview -->
+  <img src="docs/images/overview.png" alt="OpenContext 概览" width="900">
+
   <!-- Demo GIF -->
   <img src="docs/images/folder-refer-git.gif" alt="OpenContext Demo" width="700">
 
@@ -31,11 +38,11 @@
 
 ## 痛点
 
-当你用 AI 助手做事时，**上下文会丢、历史决策会忘、跨天/跨仓库会断片**。你很容易重复解释背景、重复踩坑，甚至让 AI 在错误前提下继续执行。
+当你用 AI 助手做事时，**上下文会丢、历史决策会忘、跨天/跨仓库会断片**。你很容易重复解释背景、重复踩坑，甚至让 AI 在错误前提下继续执行。很多工具只停留在“管理”，并没有接入你已经在用的 coding agent。
 
 ## 解决方案
 
-OpenContext 是一个面向 AI 助手（Agent）与 Cursor / Claude Code / Codex 等编码工具用户的「个人上下文/知识库」。把重要的背景、决策、规范沉淀成文档，让 AI 助手能「先读历史再动手、做完再沉淀」。
+OpenContext 是一个面向 AI 助手（Agent）与 Cursor / Claude Code / Codex 等编码工具用户的「个人上下文/知识库」。它直接复用你已有的 coding agent CLI（Codex/Claude/OpenCode），并提供 GUI 与内置 Skills/工具，让 AI 助手能「先读历史再动手、做完再沉淀」。
 
 **Skills 优先支持：** `oc init` 会生成用户级 skills（Cursor/Claude Code/Codex）和斜杠命令（Cursor/Claude Code），让 Agent 用一条命令完成加载、搜索、创建与迭代。
 
@@ -50,8 +57,13 @@ OpenContext 是一个面向 AI 助手（Agent）与 Cursor / Claude Code / Codex
 - **`oc` CLI** — 管理全局 `contexts/` 文档库（目录/文档、清单、检索）
 - **MCP Server** — 让 Cursor/Claude Code/Codex/Agent 通过工具调用 OpenContext
 - **Skills + 斜杠命令** — 为 Cursor/Claude Code/Codex 生成用户级 skills，为 Cursor/Claude Code 生成斜杠命令（由 `oc init` 生成）
+- **面向 Agent 的知识层** — 复用你已有的 coding agent CLI（Codex/Claude/OpenCode），并内置 Skills/工具 + GUI
 - **桌面版应用** — 用原生 UI 管理/搜索/编辑 contexts
 - **Web UI** — 本地浏览/编辑文档（无需安装桌面版）
+
+## 为什么 OpenContext 更适合开发者
+
+OpenContext 的知识管理 Agent 可以**直接用你已经在用的 coding agent CLI**（Codex/Claude/OpenCode），不需要为另一套 Agent 再付费。你带来自己熟悉的代理工具，OpenContext 直接提供现成 GUI 和内置 Skills/工具，让 Agent 能读、搜、写、迭代你的知识库。
 
 ## 快速开始
 
@@ -68,6 +80,8 @@ npm install -g @aicontextlab/cli
 | 🖥️ **桌面版应用** | 喜欢图形界面的用户 | [从 Releases 下载](https://github.com/0xranx/OpenContext/releases) |
 | ⌨️ **CLI + 工具接入** | 使用 Cursor/Claude Code/Codex/AI Agent 的开发者 | `npm install -g @aicontextlab/cli && oc init` |
 | 🔧 **仅 CLI** | 高级用户、自动化场景 | `npm install -g @aicontextlab/cli` |
+
+OpenContext 不替换你的 Agent，而是复用你已有的 coding agent CLI，并补上 GUI 与内置 Skills/工具。
 
 ### 30 秒上手（CLI + Cursor/Claude Code/Codex）
 

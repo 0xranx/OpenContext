@@ -6,6 +6,7 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 export function CustomDialog({
   isOpen,
   onClose,
+  onCancel,
   type = 'alert',
   title,
   message,
@@ -42,11 +43,18 @@ export function CustomDialog({
     onClose();
   };
 
+  const handleCancel = () => {
+    if (typeof onCancel === 'function') {
+      onCancel();
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div
         className="fixed inset-0 bg-black/20 backdrop-blur-[2px] transition-opacity"
-        onClick={onClose}
+        onClick={handleCancel}
       />
       <div className="relative w-full max-w-[420px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150 scale-100">
         <form onSubmit={handleSubmit}>
@@ -73,7 +81,7 @@ export function CustomDialog({
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Escape') onClose();
+                    if (e.key === 'Escape') handleCancel();
                   }}
                 />
               ) : (
@@ -85,7 +93,7 @@ export function CustomDialog({
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Escape') onClose();
+                    if (e.key === 'Escape') handleCancel();
                   }}
                 />
               ))}
@@ -95,7 +103,7 @@ export function CustomDialog({
             {type !== 'alert' && (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleCancel}
                 className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-md transition-colors"
               >
               {finalCancelText}
@@ -146,5 +154,4 @@ export function ContextMenu({ isOpen, x, y, onClose, items }) {
     </div>
   );
 }
-
 

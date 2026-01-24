@@ -6,6 +6,31 @@
   "permissions": [
     "core:default",
     "shell:allow-open",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "terminal-shell",
+          "cmd": "bash",
+          "args": true
+        },
+        {
+          "name": "terminal-sh",
+          "cmd": "sh",
+          "args": true
+        },
+        {
+          "name": "terminal-cmd",
+          "cmd": "cmd",
+          "args": true
+        },
+        {
+          "name": "terminal-powershell",
+          "cmd": "powershell",
+          "args": true
+        }
+      ]
+    },
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text",
     "core:window:default",
