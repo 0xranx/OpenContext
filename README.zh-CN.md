@@ -14,11 +14,16 @@
     <strong>复用你已有的 coding agent。</strong> OpenContext 直接接入你现有的 CLI（Codex/Claude/OpenCode），并提供 GUI + 内置 Skills/工具，无需额外为另一套 Agent 付费。
   </p>
 
-  <!-- Overview -->
-  <img src="docs/images/overview.png" alt="OpenContext 概览" width="900">
-
-  <!-- Demo GIF -->
-  <img src="docs/images/folder-refer-git.gif" alt="OpenContext Demo" width="700">
+  <table>
+    <tr>
+      <td>
+        <img src="docs/images/overview.png" alt="OpenContext 概览" height="260">
+      </td>
+      <td>
+        <img src="docs/images/folder-refer-git.gif" alt="OpenContext Demo" height="260">
+      </td>
+    </tr>
+  </table>
 
   <p>
     <a href="https://www.npmjs.com/package/@aicontextlab/cli"><img src="https://img.shields.io/npm/v/@aicontextlab/cli.svg?style=flat-square&color=cb3837" alt="npm version"></a>

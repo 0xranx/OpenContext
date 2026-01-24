@@ -14,11 +14,16 @@
     <strong>Bring your own coding agent.</strong> OpenContext reuses your existing CLI (Codex/Claude/OpenCode) and adds a GUI + built-in Skills/tools — no extra agent subscription.
   </p>
 
-  <!-- Overview -->
-  <img src="docs/images/overview.png" alt="OpenContext Overview" width="900">
-
-  <!-- Demo GIF -->
-  <img src="docs/images/folder-refer-git.gif" alt="OpenContext Demo" width="700">
+  <table>
+    <tr>
+      <td>
+        <img src="docs/images/overview.png" alt="OpenContext Overview" height="260">
+      </td>
+      <td>
+        <img src="docs/images/folder-refer-git.gif" alt="OpenContext Demo" height="260">
+      </td>
+    </tr>
+  </table>
 
   <p>
     <a href="https://www.npmjs.com/package/@aicontextlab/cli"><img src="https://img.shields.io/npm/v/@aicontextlab/cli.svg?style=flat-square&color=cb3837" alt="npm version"></a>
