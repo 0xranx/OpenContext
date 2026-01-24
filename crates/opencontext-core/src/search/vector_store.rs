@@ -118,7 +118,14 @@ impl VectorStore {
         // Wrap in iterator
         let batches = RecordBatchIterator::new(vec![Ok(batch)], schema.clone());
 
-        if self.table.is_none() {
+        if let Some(table) = self.table.as_ref() {
+            // Add to existing table
+            table
+                .add(Box::new(batches))
+                .execute()
+                .await
+                .map_err(SearchError::Lance)?;
+        } else {
             // Create new table
             let table = db
                 .create_table(TABLE_NAME, Box::new(batches))
@@ -126,14 +133,6 @@ impl VectorStore {
                 .await
                 .map_err(SearchError::Lance)?;
             self.table = Some(table);
-        } else {
-            // Add to existing table
-            let table = self.table.as_ref().unwrap();
-            table
-                .add(Box::new(batches))
-                .execute()
-                .await
-                .map_err(SearchError::Lance)?;
         }
 
         Ok(count)
