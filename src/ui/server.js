@@ -340,7 +340,7 @@ async function createUiServer({ host = '127.0.0.1', port = 3222 }) {
   // AI Chat Stream API (SSE)
   app.post('/api/ai/chat', async (req, res) => {
     try {
-      const { messages } = req.body || {};
+      const { messages, model: modelOverride } = req.body || {};
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Missing messages array' });
       }
@@ -370,7 +370,9 @@ async function createUiServer({ host = '127.0.0.1', port = 3222 }) {
       const provider = config.get('AI_PROVIDER') || 'openai';
       const apiKey = config.get('AI_API_KEY');
       const apiBase = config.get('AI_API_BASE') || 'https://api.openai.com/v1';
-      const model = config.get('AI_MODEL') || 'gpt-4o';
+      const model = typeof modelOverride === 'string' && modelOverride.trim().length > 0
+        ? modelOverride.trim()
+        : (config.get('AI_MODEL') || 'gpt-4o');
 
       // Set SSE headers
       res.setHeader('Content-Type', 'text/event-stream');

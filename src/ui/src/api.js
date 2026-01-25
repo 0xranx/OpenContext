@@ -305,6 +305,34 @@ export async function getEnvInfo() {
   return fetchJSON(`${API_BASE}/api/env`);
 }
 
+// ===== Terminal API (Tauri only) =====
+
+export async function spawnTerminal(options) {
+  const invoke = await getInvoke();
+  if (!invoke) {
+    throw new Error('Terminal is only available in the desktop app.');
+  }
+  return invoke('terminal_spawn', { options });
+}
+
+export async function writeTerminal(id, data) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('terminal_write', { options: { id, data } });
+}
+
+export async function resizeTerminal(id, size) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('terminal_resize', { options: { id, ...size } });
+}
+
+export async function killTerminal(id) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('terminal_kill', { options: { id } });
+}
+
 /**
  * Save configuration to config.json
  * @param {Object} options - Config options to save
@@ -321,6 +349,66 @@ export async function saveConfig(options) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(options),
+  });
+}
+
+export async function loadAgentSessions() {
+  if (!hasTauriRuntime()) return null;
+  const invoke = await getInvoke();
+  if (invoke) {
+    try {
+      return await invoke('agent_sessions_load');
+    } catch (e) {
+      console.warn('agent_sessions_load not available in Tauri:', e);
+    }
+  }
+  return null;
+}
+
+export async function saveAgentSessions(payload) {
+  if (!hasTauriRuntime()) return null;
+  const invoke = await getInvoke();
+  if (invoke) {
+    try {
+      return await invoke('agent_sessions_save', { payload });
+    } catch (e) {
+      console.warn('agent_sessions_save not available in Tauri:', e);
+    }
+  }
+  return null;
+}
+
+export async function preflightAgentSession(options) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('agent_preflight', { options });
+}
+
+export async function getAgentModelConfig() {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('agent_models_get');
+}
+
+export async function saveAgentModelConfig(options) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('agent_models_save', { options });
+}
+
+export async function execOcCommand(options) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  return invoke('oc_exec', { options });
+}
+
+export async function listenAgentStream(requestId, onEvent) {
+  const invoke = await getInvoke();
+  if (!invoke) return null;
+  const { listen } = await import('@tauri-apps/api/event');
+  const eventName = `agent-stream-${requestId}`;
+  return listen(eventName, (event) => {
+    onEvent?.(event.payload);
   });
 }
 
@@ -374,8 +462,9 @@ export async function saveAIConfig(options) {
  * @param {function(Error): void} onError - Error callback
  * @returns {Promise<void>}
  */
-export async function streamAIChat(messages, onToken, onError) {
+export async function streamAIChat(messages, onToken, onError, options = {}) {
   const invoke = await getInvoke();
+  const modelOverride = options?.model?.trim?.() || '';
   
   // Use Tauri events for streaming if available
   if (invoke) {
@@ -423,7 +512,11 @@ export async function streamAIChat(messages, onToken, onError) {
           unlisten = unlistenFn;
           
           // Invoke the AI chat command with request ID
-          invoke('ai_chat', { options: { messages, requestId } }).catch((e) => {
+          const requestOptions = { messages, requestId };
+          if (modelOverride) {
+            requestOptions.model = modelOverride;
+          }
+          invoke('ai_chat', { options: requestOptions }).catch((e) => {
             if (!resolved) {
               resolved = true;
               onError?.(e);
@@ -443,10 +536,14 @@ export async function streamAIChat(messages, onToken, onError) {
   
   // Fallback to HTTP SSE
   try {
+    const payload = { messages };
+    if (modelOverride) {
+      payload.model = modelOverride;
+    }
     const response = await fetch(`${API_BASE}/api/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -488,6 +585,351 @@ export async function streamAIChat(messages, onToken, onError) {
     onError?.(error);
     throw error;
   }
+}
+
+/**
+ * Stream Codex CLI execution (desktop only)
+ * @param {Array<{role: string, content: string}>} messages - Chat messages
+ * @param {function(string): void} onToken - Callback for each token
+ * @param {function(Error): void} onError - Error callback
+ * @param {Object} options - Options
+ * @param {string} options.sessionId - Agent session id
+ * @param {string} options.model - Optional model override
+ * @param {string} options.requestId - Optional request id
+ * @param {string} options.cwd - Optional working directory
+ * @param {function(string): void} options.onStatus - Callback for status updates
+ * @param {function(string): void} options.onReasoning - Callback for reasoning deltas
+ * @param {function(Object): void} options.onPermission - Callback for permission requests
+ * @param {function(Object): void} options.onTool - Callback for tool events
+ * @returns {Promise<void>}
+ */
+export async function streamCodexExec(messages, onToken, onError, options = {}) {
+  const invoke = await getInvoke();
+  if (!invoke) {
+    const error = new Error('Codex CLI is only available in the desktop app.');
+    onError?.(error);
+    throw error;
+  }
+
+  const { listen } = await import('@tauri-apps/api/event');
+  const requestId = options.requestId || `codex-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const sessionId = options.sessionId;
+  if (!sessionId) {
+    const error = new Error('Missing sessionId for Codex CLI.');
+    onError?.(error);
+    throw error;
+  }
+  const eventName = `agent-stream-${requestId}`;
+  const payload = {
+    messages,
+    requestId,
+    sessionId,
+    model: options.model,
+    cwd: options.cwd,
+  };
+
+  return new Promise((resolve, reject) => {
+    let unlisten = null;
+    let resolved = false;
+
+    listen(eventName, (event) => {
+      const { content, done, error, status, reasoning, permission, tool } = event.payload;
+      if (status) options.onStatus?.(status);
+      if (reasoning) options.onReasoning?.(reasoning);
+      if (permission) options.onPermission?.(permission);
+      if (tool) options.onTool?.(tool);
+      if (error) {
+        if (!resolved) {
+          resolved = true;
+          try {
+            onError?.(new Error(error));
+          } catch {
+            // ignore handler errors to avoid swallowing rejection
+          }
+          if (unlisten) unlisten();
+          reject(new Error(error));
+        }
+        return;
+      }
+
+      if (content) {
+        onToken?.(content);
+      }
+
+      if (done) {
+        if (!resolved) {
+          resolved = true;
+          if (unlisten) unlisten();
+          resolve();
+        }
+      }
+    })
+      .then((unlistenFn) => {
+        unlisten = unlistenFn;
+        invoke('codex_exec', { options: payload }).catch((e) => {
+          if (!resolved) {
+            resolved = true;
+            onError?.(e);
+            if (unlisten) unlisten();
+            reject(e);
+          }
+        });
+      })
+      .catch((e) => {
+        onError?.(e);
+        reject(e);
+      });
+  });
+}
+
+/**
+ * Stop an active Codex CLI execution
+ * @param {string} sessionId - Session id from streamCodexExec
+ * @returns {Promise<void>}
+ */
+export async function stopCodexExec(sessionId) {
+  const invoke = await getInvoke();
+  if (!invoke) return;
+  await invoke('codex_kill', { options: { sessionId } });
+}
+
+/**
+ * Stream Claude CLI execution (desktop only)
+ * @param {Array<{role: string, content: string}>} messages - Chat messages
+ * @param {function(string): void} onToken - Callback for each token
+ * @param {function(Error): void} onError - Error callback
+ * @param {Object} options - Options
+ * @param {string} options.sessionId - Agent session id
+ * @param {string} options.model - Optional model override
+ * @param {string} options.requestId - Optional request id
+ * @param {function(string): void} options.onStatus - Callback for status updates
+ * @param {function(string): void} options.onReasoning - Callback for reasoning deltas
+ * @param {function(Object): void} options.onPermission - Callback for permission requests
+ * @param {function(Object): void} options.onTool - Callback for tool events
+ * @returns {Promise<void>}
+ */
+export async function streamClaudeExec(messages, onToken, onError, options = {}) {
+  const invoke = await getInvoke();
+  if (!invoke) {
+    const error = new Error('Claude CLI is only available in the desktop app.');
+    onError?.(error);
+    throw error;
+  }
+
+  const { listen } = await import('@tauri-apps/api/event');
+  const requestId = options.requestId || `claude-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const sessionId = options.sessionId;
+  if (!sessionId) {
+    const error = new Error('Missing sessionId for Claude CLI.');
+    onError?.(error);
+    throw error;
+  }
+  const eventName = `agent-stream-${requestId}`;
+  const payload = {
+    messages,
+    requestId,
+    sessionId,
+    model: options.model,
+    cwd: options.cwd,
+  };
+
+  return new Promise((resolve, reject) => {
+    let unlisten = null;
+    let resolved = false;
+
+    listen(eventName, (event) => {
+      const { content, done, error, status, reasoning, permission, tool } = event.payload;
+      if (status) options.onStatus?.(status);
+      if (reasoning) options.onReasoning?.(reasoning);
+      if (permission) options.onPermission?.(permission);
+      if (tool) options.onTool?.(tool);
+      if (error) {
+        if (!resolved) {
+          resolved = true;
+          try {
+            onError?.(new Error(error));
+          } catch {
+            // ignore handler errors to avoid swallowing rejection
+          }
+          if (unlisten) unlisten();
+          reject(new Error(error));
+        }
+        return;
+      }
+
+      if (content) {
+        onToken?.(content);
+      }
+
+      if (done) {
+        if (!resolved) {
+          resolved = true;
+          if (unlisten) unlisten();
+          resolve();
+        }
+      }
+    })
+      .then((unlistenFn) => {
+        unlisten = unlistenFn;
+        invoke('claude_exec', { options: payload }).catch((e) => {
+          if (!resolved) {
+            resolved = true;
+            onError?.(e);
+            if (unlisten) unlisten();
+            reject(e);
+          }
+        });
+      })
+      .catch((e) => {
+        onError?.(e);
+        reject(e);
+      });
+  });
+}
+
+/**
+ * Stop an active Claude CLI execution
+ * @param {string} sessionId - Session id from streamClaudeExec
+ * @returns {Promise<void>}
+ */
+export async function stopClaudeExec(sessionId) {
+  const invoke = await getInvoke();
+  if (!invoke) return;
+  await invoke('claude_kill', { options: { sessionId } });
+}
+
+/**
+ * Stream OpenCode CLI execution (desktop only)
+ * @param {Array<{role: string, content: string}>} messages - Chat messages
+ * @param {function(string): void} onToken - Callback for each token
+ * @param {function(Error): void} onError - Error callback
+ * @param {Object} options - Options
+ * @param {string} options.sessionId - Agent session id
+ * @param {string} options.model - Optional model override
+ * @param {string} options.requestId - Optional request id
+ * @param {function(string): void} options.onStatus - Callback for status updates
+ * @param {function(string): void} options.onReasoning - Callback for reasoning deltas
+ * @param {function(Object): void} options.onPermission - Callback for permission requests
+ * @param {function(Object): void} options.onTool - Callback for tool events
+ * @returns {Promise<void>}
+ */
+export async function streamOpenCodeRun(messages, onToken, onError, options = {}) {
+  const invoke = await getInvoke();
+  if (!invoke) {
+    const error = new Error('OpenCode CLI is only available in the desktop app.');
+    onError?.(error);
+    throw error;
+  }
+
+  const { listen } = await import('@tauri-apps/api/event');
+  const requestId = options.requestId || `opencode-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const sessionId = options.sessionId;
+  if (!sessionId) {
+    const error = new Error('Missing sessionId for OpenCode CLI.');
+    onError?.(error);
+    throw error;
+  }
+  const eventName = `agent-stream-${requestId}`;
+  const payload = {
+    messages,
+    requestId,
+    sessionId,
+    model: options.model,
+    cwd: options.cwd,
+  };
+
+  return new Promise((resolve, reject) => {
+    let unlisten = null;
+    let resolved = false;
+
+    listen(eventName, (event) => {
+      const { content, done, error, status, reasoning, permission, tool } = event.payload;
+      if (status) options.onStatus?.(status);
+      if (reasoning) options.onReasoning?.(reasoning);
+      if (permission) options.onPermission?.(permission);
+      if (tool) options.onTool?.(tool);
+      if (error) {
+        if (!resolved) {
+          resolved = true;
+          try {
+            onError?.(new Error(error));
+          } catch {
+            // ignore handler errors to avoid swallowing rejection
+          }
+          if (unlisten) unlisten();
+          reject(new Error(error));
+        }
+        return;
+      }
+
+      if (content) {
+        onToken?.(content);
+      }
+
+      if (done) {
+        if (!resolved) {
+          resolved = true;
+          if (unlisten) unlisten();
+          resolve();
+        }
+      }
+    })
+      .then((unlistenFn) => {
+        unlisten = unlistenFn;
+        invoke('opencode_run', { options: payload }).catch((e) => {
+          if (!resolved) {
+            resolved = true;
+            onError?.(e);
+            if (unlisten) unlisten();
+            reject(e);
+          }
+        });
+      })
+      .catch((e) => {
+        onError?.(e);
+        reject(e);
+      });
+  });
+}
+
+/**
+ * Stop an active OpenCode CLI execution
+ * @param {string} sessionId - Session id from streamOpenCodeRun
+ * @returns {Promise<void>}
+ */
+export async function stopOpenCodeRun(sessionId) {
+  const invoke = await getInvoke();
+  if (!invoke) return;
+  await invoke('opencode_kill', { options: { sessionId } });
+}
+
+/**
+ * Respond to a Codex permission request
+ * @param {Object} options
+ * @param {string} options.sessionId
+ * @param {string} options.callId
+ * @param {string} options.type - Permission type
+ * @param {boolean} options.approved
+ * @returns {Promise<void>}
+ */
+export async function respondCodexPermission(options) {
+  const invoke = await getInvoke();
+  if (!invoke) return;
+  await invoke('codex_permission_response', { options });
+}
+
+/**
+ * Respond to an ACP permission request (Claude/OpenCode)
+ * @param {Object} options
+ * @param {string} options.sessionId
+ * @param {string} options.callId
+ * @param {string} options.optionId
+ * @returns {Promise<void>}
+ */
+export async function respondAcpPermission(options) {
+  const invoke = await getInvoke();
+  if (!invoke) return;
+  await invoke('acp_permission_response', { options });
 }
 
 // ===== Semantic Search API =====
