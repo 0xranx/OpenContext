@@ -13,6 +13,8 @@ const path = require('path');
 
 let native = null;
 let nativeError = null;
+let npmError = null;
+let localError = null;
 let initialized = false;
 let loadedFrom = null;
 
@@ -29,6 +31,7 @@ function loadNative() {
     loadedFrom = 'npm';
     return;
   } catch (e) {
+    npmError = e;
     // Not installed via npm, try local
   }
   
@@ -38,6 +41,7 @@ function loadNative() {
     native = require(nativePath);
     loadedFrom = 'local';
   } catch (e) {
+    localError = e;
     nativeError = e;
   }
 }
@@ -72,7 +76,9 @@ function get() {
       `OpenContext native bindings not available.\n` +
       `  If installed via npm: try reinstalling the package\n` +
       `  If developing locally: cd crates/opencontext-node && npm run build\n` +
-      `Error: ${nativeError?.message || 'unknown'}`
+      `  If optional deps were skipped: npm install -g @aicontextlab/cli --include=optional\n` +
+      `Error (npm): ${npmError?.message || 'unknown'}\n` +
+      `Error (local): ${localError?.message || 'unknown'}`
     );
   }
   return native;
@@ -88,7 +94,9 @@ function require_() {
       `OpenContext native bindings not available.\n` +
       `  If installed via npm: try reinstalling the package\n` +
       `  If developing locally: cd crates/opencontext-node && npm run build\n` +
-      `Error: ${nativeError?.message || 'unknown'}`
+      `  If optional deps were skipped: npm install -g @aicontextlab/cli --include=optional\n` +
+      `Error (npm): ${npmError?.message || 'unknown'}\n` +
+      `Error (local): ${localError?.message || 'unknown'}`
     );
   }
 }
