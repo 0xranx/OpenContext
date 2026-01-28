@@ -1,0 +1,28 @@
+name: CLI smoke test (no publish)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  linux-cli-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install CLI from repo (no publish)
+        run: npm install -g .
+
+      - name: CLI help
+        run: oc --help
+
+      - name: CLI init (expected to pass; if it fails, we capture logs)
+        run: oc init
