@@ -144,6 +144,6 @@
     "vite": "^5.4.8"
   },
   "optionalDependencies": {
-    "@aicontextlab/core-native": "^0.1.0"
+    "@aicontextlab/core-native": "^0.2.1"
   }
 }
