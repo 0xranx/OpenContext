@@ -226,6 +226,16 @@ impl Indexer {
             });
 
             for doc in batch {
+                // Skip files that no longer exist on disk (orphaned DB records)
+                if !std::path::Path::new(&doc.abs_path).exists() {
+                    log::warn!(
+                        "Skipping missing file during indexing: {} (orphaned DB record?)",
+                        doc.rel_path
+                    );
+                    processed_docs += 1;
+                    continue;
+                }
+
                 let content = std::fs::read_to_string(&doc.abs_path)?;
                 if content.trim().is_empty() {
                     processed_docs += 1;
