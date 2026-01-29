@@ -127,9 +127,10 @@ impl EmbeddingClient {
         let input_count = texts.len();
 
         // Truncate texts that are too long (most embedding APIs have ~8K token limit)
-        // Using char count as approximation: ~4 chars per token for English, ~1-2 for Chinese
-        // Set conservative limit to avoid API silently dropping texts
-        const MAX_CHARS: usize = 8000;
+        // Using char count as approximation: ~4 chars per token for English, ~1-2 for CJK/Cyrillic
+        // nomic-embed-text and similar models have 8192 token limit
+        // Conservative limit: 2000 chars (safe for all languages including Cyrillic/CJK)
+        const MAX_CHARS: usize = 2000;
         let texts: Vec<String> = texts
             .into_iter()
             .map(|t| {
