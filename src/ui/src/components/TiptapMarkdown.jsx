@@ -518,6 +518,28 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
       attributes: {
         class: `tiptap-editor prose prose-sm max-w-none focus:outline-none ${className || ''}`,
       },
+      // When copying from inside a code block, output plain code (no Markdown fences)
+      clipboardTextSerializer: (slice) => {
+        // Check if the slice contains only content from a single code block
+        let isOnlyCodeBlock = true;
+        let codeContent = '';
+        slice.content.forEach((node) => {
+          if (node.type.name === 'codeBlock') {
+            codeContent += node.textContent;
+          } else if (node.type.name === 'text') {
+            // Text node directly in slice (selected part of code block)
+            codeContent += node.text || '';
+          } else {
+            isOnlyCodeBlock = false;
+          }
+        });
+        // If selection is only code block content, return plain text
+        if (isOnlyCodeBlock && codeContent) {
+          return codeContent;
+        }
+        // Otherwise, let default behavior handle it (Markdown serialization)
+        return null;
+      },
       handleClick: (view, pos, event) => {
         // Handle idea reference block clicks
         const target = event.target;
