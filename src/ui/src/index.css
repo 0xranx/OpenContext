@@ -115,6 +115,87 @@ body {
 .hljs-variable {
   color: #e36209;
 }
+.hljs-function,
+.hljs-title.function_ {
+  color: #6f42c1;
+}
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #6f42c1;
+}
+.hljs-type,
+.hljs-params {
+  color: #005cc5;
+}
+.hljs-regexp {
+  color: #032f62;
+}
+.hljs-tag {
+  color: #22863a;
+}
+.hljs-attr {
+  color: #6f42c1;
+}
+.hljs-punctuation {
+  color: #24292e;
+}
+
+/* --- Code block syntax highlighting (Dark mode - GitHub Dark theme inspired) --- */
+.dark .hljs-comment,
+.dark .hljs-quote {
+  color: #8b949e;
+  font-style: italic;
+}
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-literal,
+.dark .hljs-name {
+  color: #ff7b72;
+}
+.dark .hljs-string,
+.dark .hljs-title,
+.dark .hljs-section,
+.dark .hljs-attribute,
+.dark .hljs-symbol,
+.dark .hljs-bullet,
+.dark .hljs-addition {
+  color: #a5d6ff;
+}
+.dark .hljs-number,
+.dark .hljs-meta,
+.dark .hljs-link {
+  color: #79c0ff;
+}
+.dark .hljs-deletion {
+  color: #ffa198;
+}
+.dark .hljs-variable {
+  color: #ffa657;
+}
+.dark .hljs-function,
+.dark .hljs-title.function_ {
+  color: #d2a8ff;
+}
+.dark .hljs-built_in,
+.dark .hljs-class .hljs-title {
+  color: #d2a8ff;
+}
+.dark .hljs-type,
+.dark .hljs-params {
+  color: #79c0ff;
+}
+.dark .hljs-regexp {
+  color: #a5d6ff;
+}
+.dark .hljs-tag {
+  color: #7ee787;
+}
+.dark .hljs-attr {
+  color: #d2a8ff;
+}
+.dark .hljs-punctuation {
+  color: #c9d1d9;
+}
 
 /* --- Search Modal Animations --- */
 @keyframes fade-in {
@@ -404,7 +485,7 @@ body {
   margin-left: 1.1rem;
 }
 
-/* Tiptap code block styles (using official CodeBlockLowlight) */
+/* Tiptap code block styles */
 .tiptap-editor pre,
 .tiptap-viewer pre {
   @apply my-4 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden;
@@ -417,11 +498,132 @@ body {
 
 /* Code block with language class */
 .tiptap-code-block {
-  @apply my-4 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden;
+  @apply my-4 rounded-lg border border-gray-200 bg-gray-50 overflow-visible;
 }
 
 .tiptap-code-block code {
-  @apply block p-4 overflow-x-auto text-sm font-mono leading-6 text-gray-800 bg-transparent;
+  @apply font-mono text-sm leading-6 bg-transparent p-0;
+}
+
+/* Reset pre styles inside code block component */
+.tiptap-code-block .code-pre {
+  margin: 0;
+  padding: 0.25rem 0.6rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  white-space: pre;
+  overflow-x: auto;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
+  letter-spacing: 0;
+}
+
+.tiptap-code-block .code-pre code {
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: inherit;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-variant-ligatures: inherit;
+  font-feature-settings: inherit;
+}
+
+.tiptap-code-block .code-editor-layer {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5rem !important;
+  white-space: pre !important;
+}
+
+/* Keep highlight layer metrics identical to editor layer */
+.tiptap-code-block .hljs,
+.tiptap-code-block .hljs * {
+  font-style: normal;
+  font-weight: 400;
+  font-variant-ligatures: inherit;
+  font-feature-settings: inherit;
+  letter-spacing: 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5rem !important;
+  white-space: pre !important;
+}
+
+/* Ensure selection remains visible in code editor layer */
+.tiptap-code-block .code-editor-layer {
+  color: inherit;
+  caret-color: #0f172a;
+}
+
+.dark .tiptap-code-block .code-editor-layer {
+  caret-color: #e2e8f0;
+}
+
+.tiptap-code-block .code-editor-layer::selection {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.tiptap-code-block .code-block-header {
+  @apply flex items-center px-3 py-1.5 border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 rounded-t-lg;
+  position: relative;
+  z-index: 2;
+}
+
+.dark .tiptap-code-block .code-block-header {
+  @apply border-zinc-800 bg-zinc-900 text-zinc-300;
+}
+
+.tiptap-code-block .code-block-content {
+  @apply rounded-b-lg;
+  background: inherit;
+}
+
+.tiptap-code-block .code-block-lang-btn {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors;
+}
+
+.dark .tiptap-code-block .code-block-lang-btn {
+  @apply bg-zinc-800 text-zinc-200 hover:bg-zinc-700;
+}
+
+.tiptap-code-block .code-block-lang-menu {
+  @apply absolute left-0 mt-1 w-44 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg z-50 py-1;
+}
+
+.dark .tiptap-code-block .code-block-lang-menu {
+  @apply border-zinc-700 bg-zinc-900;
+}
+
+.tiptap-code-block .code-block-lang-item {
+  @apply w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+}
+
+.dark .tiptap-code-block .code-block-lang-item {
+  @apply text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100;
+}
+
+.tiptap-code-block .code-block-lang-item.is-active {
+  @apply bg-blue-50 text-blue-600 font-medium;
+}
+
+.dark .tiptap-code-block .code-block-lang-item.is-active {
+  @apply bg-blue-900/30 text-blue-400;
+}
+
+.hljs {
+  color: #24292e;
+}
+
+.dark .hljs {
+  color: #c9d1d9;
 }
 
 /* Inline code */

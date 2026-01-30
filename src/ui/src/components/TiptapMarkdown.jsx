@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, useCallback, memo, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import { Extension, InputRule } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -21,12 +21,11 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import CodeBlock from '@tiptap/extension-code-block';
 import Typography from '@tiptap/extension-typography';
 import TableOfContents from '@tiptap/extension-table-of-contents';
 import Image from '@tiptap/extension-image';
 import { Markdown } from 'tiptap-markdown';
-import { all, createLowlight } from 'lowlight';
 import * as api from '../api';
 
 // Custom extension to handle exiting lists on Enter in empty list items
@@ -292,15 +291,17 @@ import TiptapSlashMenu from '../editor/tiptap/SlashMenu';
 import TiptapFloatingToolbar from '../editor/tiptap/FloatingToolbar';
 import TiptapTableToolbar from '../editor/tiptap/TableToolbar';
 import PageRefPicker from '../editor/tiptap/PageRefPicker';
+import TiptapCodeBlockComponent from '../editor/tiptap/CodeBlockComponent';
+import HighlightJsExtension from '../editor/tiptap/HighlightJsExtension';
 import { buildIdeaRefUrl, parseIdeaRefUrl } from '../utils/ideaRef';
 import IdeaRefBlock from '../editor/tiptap/IdeaRefBlock';
 
-// Create lowlight instance for syntax highlighting
-const lowlight = createLowlight(all);
-
-// Use official CodeBlockLowlight with syntax highlighting (simplified)
-const SimpleCodeBlock = CodeBlockLowlight.configure({
-  lowlight,
+// Use CodeBlock with custom NodeView for highlight.js rendering
+const CustomCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(TiptapCodeBlockComponent);
+  },
+}).configure({
   HTMLAttributes: {
     class: 'tiptap-code-block',
   },
@@ -390,14 +391,15 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        codeBlock: false, // Use CodeBlockLowlight instead
+        codeBlock: false, // Use CodeBlock instead
         heading: { levels: [1, 2, 3, 4, 5, 6] },
         link: false, // prevent duplicate link extension (we add CustomLink)
       }),
       MixedListSwitch, // allow typing "- " / "1. " to switch list type in-place
       NestedListHelpers, // allow mixed nested lists (bullet under ordered, etc.)
       ListExitExtension, // Handle exiting lists on Enter/Backspace in empty items
-      SimpleCodeBlock,
+      CustomCodeBlock,
+      HighlightJsExtension,
       IdeaRefBlock,
       CustomLink,
       Placeholder.configure({
@@ -788,6 +790,8 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
       {/* Table Toolbar (using official BubbleMenu - auto shows when in table) */}
       {!readOnly && <TiptapTableToolbar editor={editor} />}
 
+
+
       {/* Page Reference Picker Modal */}
       {isPageRefOpen && (
         <PageRefPicker
@@ -830,7 +834,8 @@ export function TiptapMarkdownViewer({
         codeBlock: false,
         link: false, // prevent duplicate link extension
       }),
-      SimpleCodeBlock,
+      CustomCodeBlock,
+      HighlightJsExtension,
       IdeaRefBlock,
       CustomLink,
       Table.configure({ resizable: false }),
