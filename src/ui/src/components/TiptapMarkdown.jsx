@@ -101,6 +101,33 @@ const ListExitExtension = Extension.create({
   },
 });
 
+// Handle Tab indentation inside code blocks
+const CodeBlockTabExtension = Extension.create({
+  name: 'codeBlockTab',
+  addKeyboardShortcuts() {
+    return {
+      Tab: ({ editor }) => {
+        if (!editor.isActive('codeBlock')) return false;
+        editor.commands.insertContent('  ');
+        return true;
+      },
+      'Shift-Tab': ({ editor }) => {
+        if (!editor.isActive('codeBlock')) return false;
+        const { state } = editor;
+        const { selection } = state;
+        if (!selection.empty) return true;
+        const pos = selection.from;
+        if (pos < 2) return true;
+        const textBefore = state.doc.textBetween(pos - 2, pos, '\0', '\0');
+        if (textBefore === '  ') {
+          editor.commands.deleteRange({ from: pos - 2, to: pos });
+        }
+        return true;
+      },
+    };
+  },
+});
+
 // Helpers for mixed nested lists (bullet under ordered, or ordered under bullet)
 const NestedListHelpers = Extension.create({
   name: 'nestedListHelpers',
@@ -301,6 +328,38 @@ const CustomCodeBlock = CodeBlock.extend({
   addNodeView() {
     return ReactNodeViewRenderer(TiptapCodeBlockComponent);
   },
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => {
+        if (!this.editor.isActive('codeBlock')) return false;
+        return this.editor.commands.command(({ tr, state }) => {
+          const { selection } = state;
+          tr.insertText('  ', selection.from, selection.to);
+          return true;
+        });
+      },
+      'Shift-Tab': () => {
+        if (!this.editor.isActive('codeBlock')) return false;
+        return this.editor.commands.command(({ tr, state }) => {
+          const { selection } = state;
+          const { $from } = selection;
+          // Get the text before cursor in current line
+          const parent = $from.parent;
+          const offset = $from.parentOffset;
+          const textBefore = parent.textBetween(0, offset, '\n', '\n');
+          const lastNewline = textBefore.lastIndexOf('\n');
+          const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+          const maybeSpaces = parent.textBetween(lineStart, lineStart + 2, '\n', '\n');
+          if (maybeSpaces === '  ') {
+            const from = $from.start() + lineStart;
+            tr.delete(from, from + 2);
+            return true;
+          }
+          return true; // Handled but nothing to delete
+        });
+      },
+    };
+  },
 }).configure({
   HTMLAttributes: {
     class: 'tiptap-code-block',
@@ -398,6 +457,7 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
       MixedListSwitch, // allow typing "- " / "1. " to switch list type in-place
       NestedListHelpers, // allow mixed nested lists (bullet under ordered, etc.)
       ListExitExtension, // Handle exiting lists on Enter/Backspace in empty items
+      CodeBlockTabExtension, // Allow Tab indentation in code blocks
       CustomCodeBlock,
       HighlightJsExtension,
       IdeaRefBlock,
