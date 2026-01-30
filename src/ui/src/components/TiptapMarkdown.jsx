@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, useCallback, memo, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import { Extension, InputRule } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -21,12 +21,11 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import CodeBlock from '@tiptap/extension-code-block';
 import Typography from '@tiptap/extension-typography';
 import TableOfContents from '@tiptap/extension-table-of-contents';
 import Image from '@tiptap/extension-image';
 import { Markdown } from 'tiptap-markdown';
-import { all, createLowlight } from 'lowlight';
 import * as api from '../api';
 
 // Custom extension to handle exiting lists on Enter in empty list items
@@ -97,6 +96,33 @@ const ListExitExtension = Extension.create({
         }
         
         return false;
+      },
+    };
+  },
+});
+
+// Handle Tab indentation inside code blocks
+const CodeBlockTabExtension = Extension.create({
+  name: 'codeBlockTab',
+  addKeyboardShortcuts() {
+    return {
+      Tab: ({ editor }) => {
+        if (!editor.isActive('codeBlock')) return false;
+        editor.commands.insertContent('  ');
+        return true;
+      },
+      'Shift-Tab': ({ editor }) => {
+        if (!editor.isActive('codeBlock')) return false;
+        const { state } = editor;
+        const { selection } = state;
+        if (!selection.empty) return true;
+        const pos = selection.from;
+        if (pos < 2) return true;
+        const textBefore = state.doc.textBetween(pos - 2, pos, '\0', '\0');
+        if (textBefore === '  ') {
+          editor.commands.deleteRange({ from: pos - 2, to: pos });
+        }
+        return true;
       },
     };
   },
@@ -292,15 +318,49 @@ import TiptapSlashMenu from '../editor/tiptap/SlashMenu';
 import TiptapFloatingToolbar from '../editor/tiptap/FloatingToolbar';
 import TiptapTableToolbar from '../editor/tiptap/TableToolbar';
 import PageRefPicker from '../editor/tiptap/PageRefPicker';
+import TiptapCodeBlockComponent from '../editor/tiptap/CodeBlockComponent';
+import HighlightJsExtension from '../editor/tiptap/HighlightJsExtension';
 import { buildIdeaRefUrl, parseIdeaRefUrl } from '../utils/ideaRef';
 import IdeaRefBlock from '../editor/tiptap/IdeaRefBlock';
 
-// Create lowlight instance for syntax highlighting
-const lowlight = createLowlight(all);
-
-// Use official CodeBlockLowlight with syntax highlighting (simplified)
-const SimpleCodeBlock = CodeBlockLowlight.configure({
-  lowlight,
+// Use CodeBlock with custom NodeView for highlight.js rendering
+const CustomCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(TiptapCodeBlockComponent);
+  },
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => {
+        if (!this.editor.isActive('codeBlock')) return false;
+        return this.editor.commands.command(({ tr, state }) => {
+          const { selection } = state;
+          tr.insertText('  ', selection.from, selection.to);
+          return true;
+        });
+      },
+      'Shift-Tab': () => {
+        if (!this.editor.isActive('codeBlock')) return false;
+        return this.editor.commands.command(({ tr, state }) => {
+          const { selection } = state;
+          const { $from } = selection;
+          // Get the text before cursor in current line
+          const parent = $from.parent;
+          const offset = $from.parentOffset;
+          const textBefore = parent.textBetween(0, offset, '\n', '\n');
+          const lastNewline = textBefore.lastIndexOf('\n');
+          const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+          const maybeSpaces = parent.textBetween(lineStart, lineStart + 2, '\n', '\n');
+          if (maybeSpaces === '  ') {
+            const from = $from.start() + lineStart;
+            tr.delete(from, from + 2);
+            return true;
+          }
+          return true; // Handled but nothing to delete
+        });
+      },
+    };
+  },
+}).configure({
   HTMLAttributes: {
     class: 'tiptap-code-block',
   },
@@ -390,14 +450,16 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        codeBlock: false, // Use CodeBlockLowlight instead
+        codeBlock: false, // Use CodeBlock instead
         heading: { levels: [1, 2, 3, 4, 5, 6] },
         link: false, // prevent duplicate link extension (we add CustomLink)
       }),
       MixedListSwitch, // allow typing "- " / "1. " to switch list type in-place
       NestedListHelpers, // allow mixed nested lists (bullet under ordered, etc.)
       ListExitExtension, // Handle exiting lists on Enter/Backspace in empty items
-      SimpleCodeBlock,
+      CodeBlockTabExtension, // Allow Tab indentation in code blocks
+      CustomCodeBlock,
+      HighlightJsExtension,
       IdeaRefBlock,
       CustomLink,
       Placeholder.configure({
@@ -455,6 +517,28 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
     editorProps: {
       attributes: {
         class: `tiptap-editor prose prose-sm max-w-none focus:outline-none ${className || ''}`,
+      },
+      // When copying from inside a code block, output plain code (no Markdown fences)
+      clipboardTextSerializer: (slice) => {
+        // Check if the slice contains only content from a single code block
+        let isOnlyCodeBlock = true;
+        let codeContent = '';
+        slice.content.forEach((node) => {
+          if (node.type.name === 'codeBlock') {
+            codeContent += node.textContent;
+          } else if (node.type.name === 'text') {
+            // Text node directly in slice (selected part of code block)
+            codeContent += node.text || '';
+          } else {
+            isOnlyCodeBlock = false;
+          }
+        });
+        // If selection is only code block content, return plain text
+        if (isOnlyCodeBlock && codeContent) {
+          return codeContent;
+        }
+        // Otherwise, let default behavior handle it (Markdown serialization)
+        return null;
       },
       handleClick: (view, pos, event) => {
         // Handle idea reference block clicks
@@ -788,6 +872,8 @@ export const TiptapMarkdownEditor = forwardRef(function TiptapMarkdownEditor({
       {/* Table Toolbar (using official BubbleMenu - auto shows when in table) */}
       {!readOnly && <TiptapTableToolbar editor={editor} />}
 
+
+
       {/* Page Reference Picker Modal */}
       {isPageRefOpen && (
         <PageRefPicker
@@ -830,7 +916,8 @@ export function TiptapMarkdownViewer({
         codeBlock: false,
         link: false, // prevent duplicate link extension
       }),
-      SimpleCodeBlock,
+      CustomCodeBlock,
+      HighlightJsExtension,
       IdeaRefBlock,
       CustomLink,
       Table.configure({ resizable: false }),
